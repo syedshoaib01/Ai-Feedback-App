@@ -1,8 +1,8 @@
-# ReviewFlow MVP ⚡
+# ReviewFlow ⚡
 
 > Turn genuine customer feedback into authentic, casual reviews powered by Google Gemini.
 
-ReviewFlow is a lightweight web application designed for cafes and restaurants. Customers can quickly rate their experience across 5 satisfaction categories, select highlights, and add notes. ReviewFlow then uses **Google Gemini** to turn their raw feedback into an authentic first-person review that matches real customer speech (Gen Z / casual conversational tone) without inventing facts or distorting sentiment.
+ReviewFlow is a lightweight web application designed for cafes and restaurants. Customers quickly rate their experience across 5 satisfaction categories, select highlights, and add notes. ReviewFlow then uses **Google Gemini** to turn their raw feedback into an authentic first-person review that matches real customer speech (Gen Z / casual conversational tone) without inventing facts or distorting sentiment.
 
 The customer reviews and edits their draft, copies it with one tap, and continues directly to the restaurant's Google review page.
 
@@ -19,16 +19,61 @@ The customer reviews and edits their draft, copies it with one tap, and continue
 
 ---
 
+## 📁 Project Architecture & Structure
+
+The codebase is organized following Flask best practices with the **Application Factory Pattern**, clean separation of concerns, isolated AI services, and automated test coverage:
+
+```
+reviewFlow/
+├── app/
+│   ├── __init__.py              # Application Factory (create_app) & error handlers
+│   ├── config.py                # Environment-driven configs (Development, Testing, Production)
+│   ├── routes/
+│   │   ├── __init__.py          # Blueprint aggregator
+│   │   ├── web.py               # View routes (GET /)
+│   │   └── api.py               # REST API endpoints (POST /api/generate, GET /api/health)
+│   ├── services/
+│   │   ├── __init__.py
+│   │   └── gemini_service.py    # Gemini API client, prompt engineering, slang engine
+│   └── utils/
+│       ├── __init__.py
+│       └── validators.py        # Input data validation schemas & bounds checking
+├── static/
+│   ├── css/
+│   │   └── style.css            # Custom CSS design system
+│   └── js/
+│       └── app.js               # Decoupled frontend controller & DOM event handling
+├── templates/
+│   └── index.html               # Clean HTML5 Jinja template (pure markup)
+├── tests/
+│   ├── __init__.py
+│   ├── test_validators.py       # Payload validation unit tests
+│   ├── test_services.py         # Gemini prompt & service unit tests
+│   └── test_routes.py           # Integration & endpoint tests
+├── .env.example                 # Environment variable template
+├── .gitignore                   # Git ignore specifications
+├── requirements.txt             # Application dependencies
+├── run.py                       # Primary application entrypoint
+├── app.py                       # WSGI entrypoint shim for legacy commands
+└── README.md                    # Project documentation
+```
+
+---
+
 ## 🚀 Quickstart Guide
 
 ### 1. Clone & Setup Environment
 
 ```bash
-git clone git@github.com:syedshoaib01/Ai-Feedback-App.git
+git clone https://github.com/syedshoaib01/Ai-Feedback-App.git
 cd Ai-Feedback-App
 
 python3 -m venv venv
+# On Windows:
+.\venv\Scripts\activate
+# On macOS/Linux:
 source venv/bin/activate
+
 pip install -r requirements.txt
 ```
 
@@ -53,11 +98,15 @@ GEMINI_MODEL=gemini-3.5-flash
 GOOGLE_REVIEW_URL=https://www.google.com/search?q=your+cafe+name#lrd=...
 ```
 
-> **Security Note:** The `.env` file is strictly ignored by `.gitignore`. The Gemini API key remains securely on the Python backend and is never exposed to the frontend browser.
+> **Security Note:** The `.env` file is strictly ignored by `.gitignore`. The Gemini API key remains securely on the backend and is never exposed to the client.
 
 ### 3. Run the App
 
+You can run the application using either `run.py` or `app.py`:
+
 ```bash
+python run.py
+# or
 python app.py
 ```
 
@@ -65,9 +114,20 @@ Open [http://127.0.0.1:5000](http://127.0.0.1:5000) in your browser.
 
 ---
 
+## 🧪 Running Tests
+
+Run the built-in test suite:
+
+```bash
+python -m unittest discover -s tests -p "test_*.py" -v
+```
+
+---
+
 ## 🛠️ Tech Stack
 
-- **Backend**: Python 3, Flask
+- **Backend**: Python 3, Flask (Application Factory & Blueprints)
 - **AI Integration**: Google Gemini API via official `google-genai` SDK
-- **Frontend**: HTML5, Vanilla JavaScript, Custom CSS (Plus Jakarta Sans)
+- **Frontend**: HTML5, Vanilla JavaScript (ES6+), Custom CSS Design System
+- **Testing**: Python `unittest` suite (with mocks)
 - **Environment**: `python-dotenv`

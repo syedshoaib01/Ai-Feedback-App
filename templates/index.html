@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ReviewFlow — Turn Customer Feedback into Authentic Reviews</title>
+  <meta name="description" content="Turn genuine customer feedback into natural first-person reviews powered by Google Gemini.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <main class="app">
+    <!-- Feedback Questionnaire Card -->
+    <section class="card" id="questionnaireCard">
+      <div class="brand-header">
+        <div class="brand">review<span>flow</span></div>
+        <span class="badge-tag">AI-Powered</span>
+      </div>
+
+      <p class="eyebrow">QUICK FEEDBACK</p>
+      <h1>How was your visit?</h1>
+      <p class="subtitle">Rate your experience in 5 quick sliders. We'll turn your feedback into a genuine review draft you can edit and share.</p>
+
+      <!-- Global Error Notice -->
+      <div id="errorBanner" class="alert-box alert-error hidden" role="alert">
+        <div class="alert-content">
+          <span class="alert-icon">⚠️</span>
+          <div class="alert-text">
+            <strong id="errorMessage">Gemini couldn't generate the review. Please try again.</strong>
+            <p id="errorDetail" class="alert-detail hidden"></p>
+          </div>
+        </div>
+        <button type="button" id="retryBtn" class="btn-retry">Retry</button>
+      </div>
+
+      <form id="feedbackForm" novalidate>
+        <!-- 5 Satisfaction Sliders -->
+        <div class="sliders-container">
+          <!-- 1. Food & Drinks -->
+          <div class="slider-group">
+            <div class="slider-header">
+              <label for="sliderFood" class="slider-title">Food & Drinks</label>
+              <span class="rating-badge" id="labelFood">Very satisfied (5/5)</span>
+            </div>
+            <div class="slider-wrapper">
+              <input type="range" id="sliderFood" name="food" min="1" max="5" value="5" step="1" aria-label="Food and Drinks rating">
+              <div class="slider-ticks">
+                <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 2. Service -->
+          <div class="slider-group">
+            <div class="slider-header">
+              <label for="sliderService" class="slider-title">Service</label>
+              <span class="rating-badge" id="labelService">Satisfied (4/5)</span>
+            </div>
+            <div class="slider-wrapper">
+              <input type="range" id="sliderService" name="service" min="1" max="5" value="4" step="1" aria-label="Service rating">
+              <div class="slider-ticks">
+                <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3. Ambience -->
+          <div class="slider-group">
+            <div class="slider-header">
+              <label for="sliderAmbience" class="slider-title">Ambience</label>
+              <span class="rating-badge" id="labelAmbience">Very satisfied (5/5)</span>
+            </div>
+            <div class="slider-wrapper">
+              <input type="range" id="sliderAmbience" name="ambience" min="1" max="5" value="5" step="1" aria-label="Ambience rating">
+              <div class="slider-ticks">
+                <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 4. Value for Money -->
+          <div class="slider-group">
+            <div class="slider-header">
+              <label for="sliderValue" class="slider-title">Value for Money</label>
+              <span class="rating-badge" id="labelValue">Satisfied (4/5)</span>
+            </div>
+            <div class="slider-wrapper">
+              <input type="range" id="sliderValue" name="value" min="1" max="5" value="4" step="1" aria-label="Value for Money rating">
+              <div class="slider-ticks">
+                <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 5. Overall Experience -->
+          <div class="slider-group">
+            <div class="slider-header">
+              <label for="sliderOverall" class="slider-title">Overall Experience</label>
+              <span class="rating-badge" id="labelOverall">Very satisfied (5/5)</span>
+            </div>
+            <div class="slider-wrapper">
+              <input type="range" id="sliderOverall" name="overall" min="1" max="5" value="5" step="1" aria-label="Overall Experience rating">
+              <div class="slider-ticks">
+                <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Optional: Highlight Selection -->
+        <div class="question-group">
+          <label class="section-label">What was the highlight? <span class="optional-tag">(optional)</span></label>
+          <div class="pills-grid" id="highlightPills">
+            <button type="button" class="pill-btn" data-value="Coffee">☕ Coffee</button>
+            <button type="button" class="pill-btn" data-value="Food">🥐 Food</button>
+            <button type="button" class="pill-btn" data-value="Dessert">🍰 Dessert</button>
+            <button type="button" class="pill-btn" data-value="Staff">👋 Staff</button>
+            <button type="button" class="pill-btn" data-value="Ambience">🌿 Ambience</button>
+            <button type="button" class="pill-btn" data-value="Price">💳 Price</button>
+            <button type="button" class="pill-btn" data-value="Nothing specific">✨ Nothing specific</button>
+          </div>
+        </div>
+
+        <!-- Optional: Qualitative Comment -->
+        <div class="question-group">
+          <div class="textarea-header">
+            <label for="customerComment" class="section-label">Anything you particularly liked or disliked? <span class="optional-tag">(optional)</span></label>
+            <span class="char-count"><span id="charCount">0</span>/300</span>
+          </div>
+          <textarea id="customerComment" maxlength="300" placeholder="Optional — tell us in your own words (e.g. loved the iced latte, seating was a lil cramped)..."></textarea>
+        </div>
+
+        <!-- Submit Button -->
+        <button class="primary-btn" id="generateBtn" type="submit">
+          <span class="btn-text">Generate my review</span>
+          <span class="btn-arrow">→</span>
+        </button>
+      </form>
+    </section>
+
+    <!-- Review Result Card -->
+    <section class="card hidden" id="resultCard">
+      <div class="result-header">
+        <div class="gemini-status-badge">
+          <span class="sparkle-icon">✨</span> Generated with Gemini
+        </div>
+      </div>
+
+      <p class="eyebrow">YOUR DRAFT</p>
+      <h1>Sounds like a great visit!</h1>
+      <p class="subtitle">We've drafted this authentic review from your answers. You're the author — edit anything you like before sharing.</p>
+
+      <!-- Editable Review Text Area -->
+      <div class="review-wrapper">
+        <label for="reviewText" class="sr-only">Your generated review</label>
+        <textarea id="reviewText" class="review-box" spellcheck="true" rows="6"></textarea>
+      </div>
+
+      <!-- Action Buttons: Edit and Copy -->
+      <div class="action-grid">
+        <button type="button" class="secondary-btn" id="backBtn">
+          <span>←</span> Edit answers
+        </button>
+        <button type="button" class="primary-btn copy-btn" id="copyBtn">
+          <span class="copy-icon">📋</span>
+          <span class="copy-text">Copy review</span>
+        </button>
+      </div>
+
+      <!-- Google Review Link / Dev Warning -->
+      <div class="google-section">
+        <a id="googleReviewBtn" class="google-cta-btn hidden" target="_blank" rel="noopener noreferrer">
+          <span class="star-icon">⭐</span>
+          <span>Continue to Google →</span>
+        </a>
+
+        <div id="googleMissingNotice" class="dev-notice hidden">
+          <span>⚠️</span> Google review link hasn't been configured yet (set <code>GOOGLE_REVIEW_URL</code> in <code>.env</code>).
+        </div>
+      </div>
+
+      <p class="trust-note">Your review is yours. Edit anything you want before sharing to Google.</p>
+    </section>
+
+    <footer class="app-footer">
+      ReviewFlow MVP · Powered by Google Gemini
+    </footer>
+  </main>
+
+  <script>
+    // Rating scale labels
+    const RATING_LABELS = {
+      1: "Very dissatisfied (1/5)",
+      2: "Dissatisfied (2/5)",
+      3: "Okay (3/5)",
+      4: "Satisfied (4/5)",
+      5: "Very satisfied (5/5)"
+    };
+
+    // State object
+    const state = {
+      food: 5,
+      service: 4,
+      ambience: 5,
+      value: 4,
+      overall: 5,
+      highlight: "",
+      comment: ""
+    };
+
+    // DOM Elements
+    const questionnaireCard = document.getElementById("questionnaireCard");
+    const resultCard = document.getElementById("resultCard");
+    const feedbackForm = document.getElementById("feedbackForm");
+    const generateBtn = document.getElementById("generateBtn");
+    const errorBanner = document.getElementById("errorBanner");
+    const errorMessage = document.getElementById("errorMessage");
+    const errorDetail = document.getElementById("errorDetail");
+    const retryBtn = document.getElementById("retryBtn");
+    const reviewText = document.getElementById("reviewText");
+    const copyBtn = document.getElementById("copyBtn");
+    const backBtn = document.getElementById("backBtn");
+    const googleReviewBtn = document.getElementById("googleReviewBtn");
+    const googleMissingNotice = document.getElementById("googleMissingNotice");
+    const customerComment = document.getElementById("customerComment");
+    const charCount = document.getElementById("charCount");
+
+    // Slider setup
+    const sliders = [
+      { id: "sliderFood", labelId: "labelFood", field: "food" },
+      { id: "sliderService", labelId: "labelService", field: "service" },
+      { id: "sliderAmbience", labelId: "labelAmbience", field: "ambience" },
+      { id: "sliderValue", labelId: "labelValue", field: "value" },
+      { id: "sliderOverall", labelId: "labelOverall", field: "overall" }
+    ];
+
+    function updateSlider(sliderObj) {
+      const el = document.getElementById(sliderObj.id);
+      const labelEl = document.getElementById(sliderObj.labelId);
+      const val = parseInt(el.value, 10);
+      state[sliderObj.field] = val;
+      labelEl.textContent = RATING_LABELS[val] || `${val}/5`;
+
+      // Visual color accent based on rating
+      labelEl.className = "rating-badge rating-" + val;
+
+      // Update native slider track progress fill
+      const percent = ((val - el.min) / (el.max - el.min)) * 100;
+      el.style.background = `linear-gradient(to right, #171717 0%, #171717 ${percent}%, #dedbd4 ${percent}%, #dedbd4 100%)`;
+    }
+
+    sliders.forEach(sliderObj => {
+      const el = document.getElementById(sliderObj.id);
+      updateSlider(sliderObj); // initial sync
+      el.addEventListener("input", () => updateSlider(sliderObj));
+    });
+
+    // Highlight pills toggle
+    const pills = document.querySelectorAll(".pill-btn");
+    pills.forEach(pill => {
+      pill.addEventListener("click", () => {
+        const val = pill.dataset.value;
+        if (state.highlight === val) {
+          // Deselect
+          state.highlight = "";
+          pill.classList.remove("selected");
+        } else {
+          pills.forEach(p => p.classList.remove("selected"));
+          pill.classList.add("selected");
+          state.highlight = val;
+        }
+      });
+    });
+
+    // Character counter
+    customerComment.addEventListener("input", () => {
+      charCount.textContent = customerComment.value.length;
+    });
+
+    // Hide error banner
+    function clearError() {
+      errorBanner.classList.add("hidden");
+      errorDetail.classList.add("hidden");
+    }
+
+    // Show error banner
+    function showError(msg, detail) {
+      errorMessage.textContent = msg || "Gemini couldn't generate the review. Please try again.";
+      if (detail) {
+        errorDetail.textContent = detail;
+        errorDetail.classList.remove("hidden");
+      } else {
+        errorDetail.classList.add("hidden");
+      }
+      errorBanner.classList.remove("hidden");
+      errorBanner.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+
+    // Submit handler
+    async function submitFeedback() {
+      clearError();
+      state.comment = customerComment.value.trim();
+
+      // Set loading state
+      generateBtn.disabled = true;
+      generateBtn.classList.add("loading");
+      generateBtn.innerHTML = `
+        <span class="spinner"></span>
+        <span class="btn-text">Creating your review...</span>
+      `;
+
+      try {
+        const response = await fetch("/api/generate", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Accept": "application/json"
+          },
+          body: JSON.stringify(state)
+        });
+
+        const data = await response.json().catch(() => ({}));
+
+        if (!response.ok) {
+          throw new Error(data.error || "Failed to generate review. Please try again.");
+        }
+
+        if (!data.review) {
+          throw new Error("Received an empty review response. Please try again.");
+        }
+
+        // Populate result card
+        reviewText.value = data.review;
+
+        // Configure Google Review button
+        if (data.google_review_url && data.google_review_url.trim() !== "") {
+          googleReviewBtn.href = data.google_review_url.trim();
+          googleReviewBtn.classList.remove("hidden");
+          googleMissingNotice.classList.add("hidden");
+        } else {
+          googleReviewBtn.classList.add("hidden");
+          googleMissingNotice.classList.remove("hidden");
+        }
+
+        // Transition views
+        questionnaireCard.classList.add("hidden");
+        resultCard.classList.remove("hidden");
+        window.scrollTo({ top: 0, behavior: "smooth" });
+
+      } catch (err) {
+        showError("⚠️ Gemini couldn't generate the review. Please try again.", err.message);
+      } finally {
+        generateBtn.disabled = false;
+        generateBtn.classList.remove("loading");
+        generateBtn.innerHTML = `
+          <span class="btn-text">Generate my review</span>
+          <span class="btn-arrow">→</span>
+        `;
+      }
+    }
+
+    feedbackForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      submitFeedback();
+    });
+
+    retryBtn.addEventListener("click", () => {
+      clearError();
+      submitFeedback();
+    });
+
+    // Back to edit answers
+    backBtn.addEventListener("click", () => {
+      resultCard.classList.add("hidden");
+      questionnaireCard.classList.remove("hidden");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+
+    // Copy to clipboard with visual confirmation
+    copyBtn.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(reviewText.value);
+        const originalHtml = copyBtn.innerHTML;
+        copyBtn.innerHTML = `<span class="copy-icon">✓</span><span>Copied!</span>`;
+        copyBtn.classList.add("copied");
+
+        setTimeout(() => {
+          copyBtn.innerHTML = originalHtml;
+          copyBtn.classList.remove("copied");
+        }, 2000);
+      } catch (err) {
+        // Fallback for older browsers or non-secure contexts
+        reviewText.select();
+        document.execCommand("copy");
+        copyBtn.innerHTML = `<span class="copy-icon">✓</span><span>Copied!</span>`;
+        setTimeout(() => {
+          copyBtn.innerHTML = `<span class="copy-icon">📋</span><span class="copy-text">Copy review</span>`;
+        }, 2000);
+      }
+    });
+  </script>
+</body>
+</html>

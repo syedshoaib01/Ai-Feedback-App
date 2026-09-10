@@ -4,7 +4,6 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "prebuild": "node -e \"if (!require('fs').existsSync('node_modules/tailwindcss')) { console.log('Dependencies missing. Installing...'); require('child_process').execSync('npm install --include=dev', { stdio: 'inherit' }); }\"",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"

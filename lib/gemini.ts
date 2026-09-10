@@ -3,28 +3,34 @@ import { FeedbackData } from "./types";
 import { SCORE_LABELS, SLANG_STYLE_GUIDES } from "./constants";
 import { sanitizeErrorMessage } from "./utils";
 
-const GEMINI_API_KEY = (process.env.GEMINI_API_KEY || "").trim();
-const GEMINI_MODEL = (process.env.GEMINI_MODEL || "gemini-3.5-flash").trim();
-const GOOGLE_REVIEW_URL = (process.env.GOOGLE_REVIEW_URL || "").trim();
-const FLASK_API_URL = (process.env.FLASK_API_URL || "").trim();
-const USE_FLASK_BACKEND = process.env.USE_FLASK_BACKEND === "true";
-
-export function isGeminiConfigured(): boolean {
-  return Boolean(GEMINI_API_KEY || (USE_FLASK_BACKEND && FLASK_API_URL));
-}
-
-export function getGoogleReviewUrl(): string {
-  return GOOGLE_REVIEW_URL;
+function getGeminiApiKey(): string {
+  return (process.env.GEMINI_API_KEY || "").trim();
 }
 
 export function getGeminiModel(): string {
-  return GEMINI_MODEL;
+  return (process.env.GEMINI_MODEL || "gemini-3.5-flash").trim();
+}
+
+export function getGoogleReviewUrl(): string {
+  return (process.env.GOOGLE_REVIEW_URL || "").trim();
+}
+
+export function isGeminiConfigured(): boolean {
+  const apiKey = getGeminiApiKey();
+  const flaskUrl = (process.env.FLASK_API_URL || "").trim();
+  const useFlask = process.env.USE_FLASK_BACKEND === "true";
+  return Boolean(apiKey || (useFlask && flaskUrl));
 }
 
 export async function generateWithGemini(data: FeedbackData): Promise<string> {
+  const apiKey = getGeminiApiKey();
+  const model = getGeminiModel();
+  const flaskUrl = (process.env.FLASK_API_URL || "").trim();
+  const useFlask = process.env.USE_FLASK_BACKEND === "true";
+
   // If explicitly configured to proxy to Flask backend
-  if (USE_FLASK_BACKEND && FLASK_API_URL) {
-    const flaskRes = await fetch(`${FLASK_API_URL}/api/generate`, {
+  if (useFlask && flaskUrl) {
+    const flaskRes = await fetch(`${flaskUrl}/api/generate`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
@@ -36,7 +42,7 @@ export async function generateWithGemini(data: FeedbackData): Promise<string> {
     return flaskJson.review;
   }
 
-  if (!GEMINI_API_KEY) {
+  if (!apiKey) {
     throw new Error("GEMINI_API_KEY is not configured in environment variables.");
   }
 
@@ -82,7 +88,7 @@ Customer Feedback:
 - Customer's own words: ${comment ? comment : "None provided"}
 `;
 
-  const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
+  const ai = new GoogleGenAI({ apiKey });
   let lastError: unknown = null;
 
   for (let attempt = 0; attempt < 2; attempt++) {
@@ -92,7 +98,7 @@ Customer Feedback:
       }
 
       const response = await ai.models.generateContent({
-        model: GEMINI_MODEL,
+        model,
         contents: prompt,
       });
 
@@ -117,6 +123,6 @@ Customer Feedback:
     }
   }
 
-  const sanitized = sanitizeErrorMessage(lastError, GEMINI_API_KEY);
+  const sanitized = sanitizeErrorMessage(lastError, apiKey);
   throw new Error(sanitized);
 }

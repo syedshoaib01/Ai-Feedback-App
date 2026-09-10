@@ -101,21 +101,31 @@ python -m unittest discover -s tests -p "test_*.py" -v
 
 ---
 
-## ☁️ Deployment on Render
+## ☁️ Deployment on Vercel (Recommended)
 
-### Single Web Service (Next.js - Recommended)
+1. Import your GitHub repository (`Ai-Feedback-App`) on [Vercel](https://vercel.com/new).
+2. Vercel automatically detects the **Next.js** framework preset.
+3. Under **Environment Variables**, configure:
+   - `GEMINI_API_KEY`: Your Gemini API key from Google AI Studio
+   - `GEMINI_MODEL`: `gemini-3.5-flash` (or your chosen Gemini model)
+   - `GOOGLE_REVIEW_URL`: Direct Google Review link for your business
+4. Click **Deploy**. Vercel will build and deploy the app with optimized edge caching and serverless AI review generation.
+
+<details>
+<summary>Alternative: Deployment on Render</summary>
 
 1. Connect your GitHub repository (`Ai-Feedback-App`) to Render.
-2. Create a new **Web Service**:
-   - **Environment**: `Node`
-   - **Build Command**: `npm install --include=dev && npm run build`
+2. Create a new **Web Service** with Node environment:
+   - **Build Command**: `npm run build`
    - **Start Command**: `npm start`
-3. Under **Environment Variables**, add:
+3. Under **Environment Variables**, set:
    - `NODE_VERSION`: `20.19.5`
    - `GEMINI_API_KEY`: Your Gemini API key
    - `GEMINI_MODEL`: `gemini-3.5-flash`
    - `GOOGLE_REVIEW_URL`: Your business's Google review URL
    - `NODE_ENV`: `production`
+
+</details>
 
 ---
 

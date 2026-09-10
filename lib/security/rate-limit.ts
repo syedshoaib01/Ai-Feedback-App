@@ -1,6 +1,18 @@
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 
+// Server-only runtime check to prevent accidental client execution
+if (typeof window !== "undefined") {
+  throw new Error("Rate limiting module can only be executed server-side.");
+}
+
+export class RateLimitConfigError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "RateLimitConfigError";
+  }
+}
+
 export interface RateLimitResult {
   isRateLimited: boolean;
   remaining: number;
@@ -13,7 +25,7 @@ export interface RateLimitOptions {
   maxRequests?: number; // e.g. 15 requests per 10 min
 }
 
-// In-Memory fallback store for environments without Upstash/Redis configured
+// In-Memory fallback store for local development environments
 interface MemoryRecord {
   timestamps: number[];
 }
@@ -21,6 +33,11 @@ interface MemoryRecord {
 const inMemoryStore = new Map<string, MemoryRecord>();
 let lastCleanup = Date.now();
 const CLEANUP_INTERVAL_MS = 10 * 60 * 1000;
+
+export function _resetMemoryStore(): void {
+  inMemoryStore.clear();
+  lastCleanup = Date.now();
+}
 
 function cleanupMemoryStore(windowMs: number) {
   const now = Date.now();
@@ -36,10 +53,10 @@ function cleanupMemoryStore(windowMs: number) {
   }
 }
 
-function checkMemoryRateLimit(
+export function checkMemoryRateLimit(
   identifier: string,
-  maxRequests: number,
-  windowMs: number
+  maxRequests: number = 15,
+  windowMs: number = 10 * 60 * 1000
 ): RateLimitResult {
   cleanupMemoryStore(windowMs);
 
@@ -71,35 +88,74 @@ function checkMemoryRateLimit(
   };
 }
 
+export function isUpstashConfigured(): boolean {
+  const url = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
+  return Boolean(url && token);
+}
+
 // Lazy initialization of Upstash Redis client
 let upstashRatelimit: Ratelimit | null = null;
 let isUpstashInitialized = false;
 
-function getUpstashLimiter(): Ratelimit | null {
-  if (isUpstashInitialized) return upstashRatelimit;
+export function _resetRateLimiterState(): void {
+  upstashRatelimit = null;
+  isUpstashInitialized = false;
+  _resetMemoryStore();
+}
+
+export function _setUpstashLimiter(limiter: Ratelimit | null): void {
+  upstashRatelimit = limiter;
   isUpstashInitialized = true;
+}
 
-  const url = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
-  const token = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
-
-  if (url && token) {
-    try {
-      const redis = new Redis({ url, token });
-      upstashRatelimit = new Ratelimit({
-        redis,
-        // 15 requests per 10 minutes per IP
-        limiter: Ratelimit.slidingWindow(15, "10 m"),
-        prefix: "reviewflow_rl",
-        analytics: true,
-      });
-      console.log("[ReviewFlow] Upstash distributed rate limiter active.");
-    } catch (err) {
-      console.warn("[ReviewFlow] Failed to initialize Upstash Redis, falling back to in-memory limiter:", err);
-      upstashRatelimit = null;
-    }
+export function getUpstashLimiter(): Ratelimit | null {
+  if (isUpstashInitialized) {
+    return upstashRatelimit;
   }
 
-  return upstashRatelimit;
+  const isProd = process.env.NODE_ENV === "production";
+  const configured = isUpstashConfigured();
+
+  if (!configured) {
+    if (isProd) {
+      throw new RateLimitConfigError(
+        "Upstash Redis rate limiting is misconfigured in production: " +
+        "Missing required environment variables UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN. " +
+        "In-memory fallback is disabled in production to prevent silent rate-limit bypasses across serverless instances."
+      );
+    }
+    isUpstashInitialized = true;
+    upstashRatelimit = null;
+    return null;
+  }
+
+  try {
+    const redis = Redis.fromEnv();
+    upstashRatelimit = new Ratelimit({
+      redis,
+      limiter: Ratelimit.slidingWindow(15, "10m"),
+      prefix: "reviewflow_rl",
+      analytics: true,
+    });
+    isUpstashInitialized = true;
+    return upstashRatelimit;
+  } catch (err) {
+    if (isProd) {
+      throw new RateLimitConfigError(
+        `Failed to initialize Upstash Redis rate limiter in production: ${
+          err instanceof Error ? err.message : String(err)
+        }`
+      );
+    }
+    console.warn(
+      "[ReviewFlow] Failed to initialize Upstash Redis in development, falling back to in-memory limiter:",
+      err
+    );
+    isUpstashInitialized = true;
+    upstashRatelimit = null;
+    return null;
+  }
 }
 
 export async function checkRateLimit(
@@ -121,15 +177,22 @@ export async function checkRateLimit(
         limit: res.limit,
       };
     } catch (redisErr) {
+      if (process.env.NODE_ENV === "production") {
+        console.error(
+          "[ReviewFlow] Upstash Redis request failed in production:",
+          redisErr instanceof Error ? redisErr.message : redisErr
+        );
+        throw redisErr;
+      }
       console.warn(
-        "[ReviewFlow] Upstash Redis request failed, using in-memory fallback:",
+        "[ReviewFlow] Upstash Redis request failed in development, using in-memory fallback:",
         redisErr instanceof Error ? redisErr.message : redisErr
       );
       return checkMemoryRateLimit(identifier, maxRequests, windowMs);
     }
   }
 
-  // Graceful fallback to memory limiter
+  // Development-only in-memory fallback
   return checkMemoryRateLimit(identifier, maxRequests, windowMs);
 }
 

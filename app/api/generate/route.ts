@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { validateFeedbackPayload } from "@/lib/validation/feedback";
-import { checkRateLimit, getClientIp } from "@/lib/security/rate-limit";
+import { checkRateLimit, getClientIp, RateLimitConfigError } from "@/lib/security/rate-limit";
 import { isGeminiConfigured, getGoogleReviewUrl, redactSensitiveData } from "@/lib/gemini/client";
 import { generateReviewWithGemini, GeminiGenerationError } from "@/lib/gemini/generate-review";
 
@@ -8,12 +8,33 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 export async function POST(request: NextRequest) {
-  // 1. Check client rate limit to protect public QR endpoint (Distributed Upstash Redis / Memory fallback)
+  // 1. Check client rate limit to protect public QR endpoint (Upstash Redis in prod / Dev memory fallback)
   const clientIp = getClientIp(request.headers);
-  const rateLimit = await checkRateLimit(clientIp, {
-    windowMs: 10 * 60 * 1000, // 10 minutes
-    maxRequests: 15, // 15 calls per 10 mins per IP
-  });
+  let rateLimit;
+  try {
+    rateLimit = await checkRateLimit(clientIp);
+  } catch (err: unknown) {
+    if (err instanceof RateLimitConfigError) {
+      console.error("[ReviewFlow API] Production rate limit configuration error:", err.message);
+      return NextResponse.json(
+        {
+          error: "Rate limiting service is misconfigured. Upstash Redis configuration is required in production.",
+          source: "rate_limit_config",
+          google_review_url: getGoogleReviewUrl(),
+        },
+        { status: 500 }
+      );
+    }
+    console.error("[ReviewFlow API] Rate limit check error:", err);
+    return NextResponse.json(
+      {
+        error: "Rate limiting service unavailable. Please try again later.",
+        source: "rate_limit_error",
+        google_review_url: getGoogleReviewUrl(),
+      },
+      { status: 500 }
+    );
+  }
 
   const rateLimitHeaders = {
     "X-RateLimit-Limit": String(rateLimit.limit),

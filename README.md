@@ -17,7 +17,7 @@ Using **Google Gemini** via the official `@google/genai` TypeScript SDK (`gemini
 - **Calibrated Gen-Z Voice**: Natural, human conversational tone that avoids robotic corporate templates and cringe caricatures (`fr fr`, `no cap`, `bussin`). Uses 4 rotating cadence profiles (`punchy_fragmented`, `conversational_smooth`, `observant_candid`, `casual_spoken`) and mirrors customer phrasing.
 - **Zero Hallucination Policy**: Grounded strictly in customer feedback — never invents menu items, staff names, prices, or wait times not mentioned by the customer.
 - **Strict Sentiment Fidelity**: Positive stays positive, mixed stays mixed, and critical stays critical across 5 distinct sentiment tiers.
-- **Distributed Redis Rate Limiting**: Powered by `@upstash/ratelimit` and `@upstash/redis` for multi-instance Vercel serverless protection (15 submissions / 10 min per IP) with seamless in-memory sliding window fallback.
+- **Distributed Redis Rate Limiting**: Powered by `@upstash/ratelimit` and `@upstash/redis` with `Redis.fromEnv()` for multi-instance Vercel serverless protection (15 requests / 10 minutes per IP). Required in production; in local development, automatically falls back to an in-memory sliding window.
 - **Restaurant Configuration Architecture**: Clean `/r/[restaurantSlug]` dynamic routing supporting custom venue names, logos, highlights, themes, and Google Review URLs without requiring a database.
 - **Privacy-First Analytics Event Boundaries**: Telemetry points (`question_viewed`, `rating_selected`, `generation_started`, `generation_success`, `review_copied`, `google_cta_clicked`) that strictly omit PII and never persist customer review drafts.
 - **PWA Ready**: Standalone app manifest and dynamic Next.js 15 metadata icons (`/icon`, `/apple-icon`).
@@ -30,7 +30,7 @@ Using **Google Gemini** via the official `@google/genai` TypeScript SDK (`gemini
 - **Framework**: Next.js 15 (App Router, Server Components & Route Handlers)
 - **Language**: TypeScript 5 (Strict Mode)
 - **AI Engine**: Google Gemini API via official `@google/genai` SDK (`gemini-3.8-flash`)
-- **Rate Limiting**: `@upstash/ratelimit` & `@upstash/redis` (with memory fallback)
+- **Rate Limiting**: `@upstash/ratelimit` & `@upstash/redis` (15 req / 10m per IP, required in production; dev in-memory fallback)
 - **Validation**: Zod schema validation
 - **Styling**: Tailwind CSS & CSS variable design tokens
 - **Animations**: Motion for React (`motion/react`)
@@ -61,7 +61,8 @@ GEMINI_MODEL=gemini-3.8-flash
 # Direct Google Review URL for your business
 GOOGLE_REVIEW_URL=https://www.google.com/search?q=your+business+name#lrd=...
 
-# (Optional for Vercel) Upstash Redis for distributed rate limiting
+# Upstash Redis for distributed rate limiting (Required in production)
+# In local development (NODE_ENV !== "production"), falls back to in-memory sliding window if omitted
 UPSTASH_REDIS_REST_URL=
 UPSTASH_REDIS_REST_TOKEN=
 ```
@@ -99,6 +100,20 @@ npx tsx scripts/eval-prompt-matrix.ts
 
 ---
 
+## 🛡️ Production Rate Limiting (Upstash Redis)
+
+ReviewFlow protects the Gemini generation API with production-grade distributed rate limiting:
+
+- **Production Requirement**: Upstash Redis is **required in production**. Stateless Vercel serverless functions do not share memory across instances; distributed Redis coordinates request counts globally.
+- **Production Limit**: **15 requests per 10 minutes per client IP** (`Ratelimit.slidingWindow(15, "10m")`).
+- **Required Environment Variables**:
+  - `UPSTASH_REDIS_REST_URL`: Your Upstash Redis REST database URL.
+  - `UPSTASH_REDIS_REST_TOKEN`: Your Upstash Redis REST authentication token.
+- **Development Fallback**: In local development (`NODE_ENV !== "production"`), ReviewFlow automatically falls back to an in-memory sliding window if Upstash credentials are not present. In production, missing Upstash configuration fails explicitly with HTTP 500 to prevent silent, unprotected traffic bypasses.
+- **Client IP Resolution**: Evaluates `x-forwarded-for`, `x-real-ip`, and `cf-connecting-ip` headers, returning standard `429 Too Many Requests` with `Retry-After` and `X-RateLimit-*` response headers.
+
+---
+
 ## ☁️ Deployment on Vercel (Production Ready)
 
 ReviewFlow is optimized for zero-config deployment on [Vercel](https://vercel.com):
@@ -109,8 +124,8 @@ ReviewFlow is optimized for zero-config deployment on [Vercel](https://vercel.co
    - `GEMINI_API_KEY`: Your Gemini API key from Google AI Studio (marked sensitive/encrypted)
    - `GEMINI_MODEL`: `gemini-3.8-flash`
    - `GOOGLE_REVIEW_URL`: Direct Google Review link for your business
-   - `UPSTASH_REDIS_REST_URL`: (Optional) Upstash Redis endpoint for distributed rate limiting
-   - `UPSTASH_REDIS_REST_TOKEN`: (Optional) Upstash Redis REST token
+   - `UPSTASH_REDIS_REST_URL`: Upstash Redis REST URL endpoint (Required in production)
+   - `UPSTASH_REDIS_REST_TOKEN`: Upstash Redis REST token (Required in production)
 4. Deploy! Vercel automatically deploys the App Router routes as serverless functions with global edge caching and automatic SSL.
 
 ---
@@ -147,7 +162,7 @@ reviewflow_mvp/
 │   ├── validation/
 │   │   └── feedback.ts             # Zod schema validation & input sanitizer
 │   ├── security/
-│   │   └── rate-limit.ts           # Distributed Upstash Redis rate limiter with in-memory fallback
+│   │   └── rate-limit.ts           # Upstash Redis rate limiter (15 req/10m) with dev in-memory fallback
 │   ├── constants.ts                # Categories, descriptors, highlight tags
 │   ├── types.ts                    # TypeScript interfaces
 │   └── utils.ts                    # cn merger and safe haptic utilities (reduced-motion aware)

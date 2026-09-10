@@ -23,3 +23,11 @@ htmlcov/
 # Operating system files
 .DS_Store
 Thumbs.db
+
+# Node dependencies & Next.js build output
+node_modules/
+.next/
+out/
+build/
+*.tsbuildinfo
+next-env.d.ts

@@ -9,7 +9,11 @@
     "lint": "next lint"
   },
   "engines": {
-    "node": ">=20.0.0"
+    "node": "20.x"
+  },
+  "allowScripts": {
+    "@google/genai": true,
+    "protobufjs": true
   },
   "dependencies": {
     "@google/genai": "^2.21.0",

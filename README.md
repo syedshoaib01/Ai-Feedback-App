@@ -25,13 +25,13 @@ Using **Google Gemini**, ReviewFlow drafts an authentic, natural first-person re
 
 ## 🛠️ Tech Stack
 
-- **Framework**: Next.js 15 (App Router, Server Components & Route Handlers)
-- **Language**: TypeScript (Strict Mode)
+- **Frontend & App Engine**: Next.js 15 (App Router, Server Components & Route Handlers)
+- **Language**: TypeScript (Strict Mode) & Python 3.12
 - **Styling**: Tailwind CSS & Modern CSS Design Tokens
 - **Animations**: Motion for React (`motion/react`)
-- **AI Integration**: Google Gemini API via official `@google/genai` SDK
+- **AI Integration**: Google Gemini API via official `@google/genai` (Node) & `google-genai` (Python)
 - **Icons**: Lucide React
-- **Legacy Backend (Preserved)**: Python Flask (`app.py`), `google-genai`
+- **Alternative / Legacy Backend**: Python Flask (Application Factory, Blueprints, Unittests)
 
 ---
 
@@ -58,6 +58,8 @@ GEMINI_MODEL=gemini-3.5-flash
 GOOGLE_REVIEW_URL=https://www.google.com/search?q=your+business+name#lrd=...
 ```
 
+> **Security Note:** The `.env` file is strictly ignored by `.gitignore`. The Gemini API key remains securely on the backend and is never exposed to the client.
+
 ### 2. Install & Run Next.js (Modern Production App)
 
 ```bash
@@ -74,23 +76,34 @@ npm start
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-### 3. (Optional) Run Legacy Flask App
+### 3. (Optional) Run Flask Backend
 
-The original Python Flask backend remains fully intact and functional:
+The Python Flask backend remains fully intact and organized with the Application Factory pattern:
 
 ```bash
+python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
+
+# Run via entrypoint
+python run.py
+# or
 python app.py
 ```
 
 Open [http://127.0.0.1:5000](http://127.0.0.1:5000) in your browser.
 
+### 4. Running Python Tests
+
+```bash
+python -m unittest discover -s tests -p "test_*.py" -v
+```
+
 ---
 
 ## ☁️ Deployment on Render
 
-### Single Web Service (Recommended)
+### Single Web Service (Next.js - Recommended)
 
 1. Connect your GitHub repository (`Ai-Feedback-App`) to Render.
 2. Create a new **Web Service**:
@@ -111,12 +124,17 @@ Open [http://127.0.0.1:5000](http://127.0.0.1:5000) in your browser.
 reviewflow_mvp/
 ├── app/
 │   ├── api/
-│   │   ├── generate/route.ts   # Server-side Gemini generation route
-│   │   └── config/route.ts     # Public config (Google review URL, model status)
+│   │   ├── generate/route.ts   # Next.js Server-side Gemini generation route
+│   │   └── config/route.ts     # Next.js public config (Google review URL, status)
 │   ├── globals.css             # Tailwind tokens, slider styles, dark mode
 │   ├── layout.tsx              # Root layout with fonts, metadata, theme script
 │   ├── manifest.ts             # PWA metadata
-│   └── page.tsx                # Main ReviewFlow app view
+│   ├── page.tsx                # Main ReviewFlow app view
+│   ├── __init__.py             # Flask Application Factory (create_app)
+│   ├── config.py               # Flask environment configs
+│   ├── routes/                 # Flask blueprints (api.py, web.py)
+│   ├── services/               # Flask services (gemini_service.py)
+│   └── utils/                  # Flask validators
 ├── components/
 │   ├── ui/                     # Button, Card, Chip, ProgressBar, ThemeToggle
 │   ├── feedback/               # RatingSlider, StepQuestion, HighlightsStep, FeedbackFlow
@@ -130,6 +148,8 @@ reviewflow_mvp/
 │   ├── gemini.ts               # Server-side Google GenAI client & prompt
 │   ├── types.ts                # TypeScript interfaces
 │   └── utils.ts                # Utility functions & tactile haptics
-├── app.py                      # Preserved legacy Flask backend
-└── requirements.txt            # Preserved Python dependencies
+├── run.py                      # Flask runner
+├── app.py                      # Flask shim entrypoint
+├── requirements.txt            # Python dependencies
+└── tests/                      # Python unit tests
 ```

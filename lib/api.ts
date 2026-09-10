@@ -32,7 +32,7 @@ export async function fetchAppConfig(): Promise<AppConfig> {
     return {
       hasGeminiKey: true,
       googleReviewUrl: "",
-      model: "gemini-2.5-flash",
+      model: "gemini-3.5-flash",
     };
   }
 }

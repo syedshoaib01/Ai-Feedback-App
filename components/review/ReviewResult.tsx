@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { motion } from "motion/react";
 import { Button } from "@/components/ui/Button";
 import { Copy, Check, ArrowLeft, Star, AlertCircle } from "lucide-react";
@@ -20,13 +20,26 @@ export function ReviewResult({
   onEditAnswers,
 }: ReviewResultProps) {
   const [copied, setCopied] = useState(false);
+  const copyTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (copyTimeoutRef.current) {
+        clearTimeout(copyTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const handleCopy = async () => {
+    if (copyTimeoutRef.current) {
+      clearTimeout(copyTimeoutRef.current);
+    }
+
     try {
       await navigator.clipboard.writeText(review);
       hapticFeedback(20);
       setCopied(true);
-      setTimeout(() => setCopied(false), 2200);
+      copyTimeoutRef.current = setTimeout(() => setCopied(false), 2200);
     } catch {
       // Fallback for non-secure context or older devices
       const el = document.createElement("textarea");
@@ -37,11 +50,17 @@ export function ReviewResult({
       document.body.removeChild(el);
       hapticFeedback(20);
       setCopied(true);
-      setTimeout(() => setCopied(false), 2200);
+      copyTimeoutRef.current = setTimeout(() => setCopied(false), 2200);
     }
   };
 
-  const hasGoogleUrl = Boolean(googleReviewUrl && googleReviewUrl.trim().length > 0);
+  const isSafeUrl = (url?: string): boolean => {
+    if (!url) return false;
+    const trimmed = url.trim();
+    return trimmed.startsWith("https://") || trimmed.startsWith("http://");
+  };
+
+  const hasGoogleUrl = isSafeUrl(googleReviewUrl);
 
   return (
     <motion.div

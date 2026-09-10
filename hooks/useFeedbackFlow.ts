@@ -21,34 +21,45 @@ export function useFeedbackFlow() {
 
   // Initialize config (Google Review URL)
   useEffect(() => {
+    let isMounted = true;
     fetchAppConfig().then((config) => {
-      if (config.googleReviewUrl) {
+      if (isMounted && config.googleReviewUrl) {
         setGoogleReviewUrl(config.googleReviewUrl);
       }
     });
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const setRating = useCallback((field: keyof FeedbackRatings, value: RatingValue) => {
+    setError(null);
     setRatings((prev) => ({ ...prev, [field]: value }));
   }, []);
 
   const toggleHighlight = useCallback((id: string) => {
+    setError(null);
     setHighlight((prev) => (prev === id ? "" : id));
   }, []);
 
   const nextStep = useCallback(() => {
+    setError(null);
     setCurrentStep((prev) => Math.min(prev + 1, 6));
   }, []);
 
   const prevStep = useCallback(() => {
+    setError(null);
     setCurrentStep((prev) => Math.max(prev - 1, 1));
   }, []);
 
   const goToStep = useCallback((step: number) => {
+    setError(null);
     setCurrentStep(Math.min(Math.max(step, 1), 6));
   }, []);
 
   const submitFeedback = useCallback(async () => {
+    if (view === "generating") return;
+
     setError(null);
     setView("generating");
 
@@ -75,9 +86,10 @@ export function useFeedbackFlow() {
         setError("Failed to generate review. Please try again.");
       }
     }
-  }, [ratings, highlight, comment]);
+  }, [view, ratings, highlight, comment]);
 
   const editAnswers = useCallback(() => {
+    setError(null);
     setView("questionnaire");
     setCurrentStep(1);
   }, []);

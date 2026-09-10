@@ -175,7 +175,7 @@ export function FeedbackFlow() {
                     comment={comment}
                     onChangeComment={setComment}
                     onSubmit={submitFeedback}
-                    onPrev={() => setIsAllQuestionsMode(false)}
+                    showPrev={false}
                     isGenerating={false}
                     errorMessage={error || undefined}
                     onRetry={submitFeedback}

@@ -141,7 +141,7 @@ export function RatingSlider({
         <motion.div
           className={cn(
             "absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-card border-2 border-foreground shadow-md flex items-center justify-center pointer-events-none z-10",
-            isDragging && "scale-115 shadow-xl ring-4 ring-foreground/15"
+            isDragging && "scale-110 shadow-xl ring-4 ring-foreground/15"
           )}
           initial={false}
           animate={{ left: `${percentage}%` }}

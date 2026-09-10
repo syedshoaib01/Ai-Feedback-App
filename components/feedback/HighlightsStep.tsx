@@ -13,7 +13,8 @@ interface HighlightsStepProps {
   comment: string;
   onChangeComment: (val: string) => void;
   onSubmit: () => void;
-  onPrev: () => void;
+  onPrev?: () => void;
+  showPrev?: boolean;
   isGenerating: boolean;
   errorMessage?: string;
   onRetry?: () => void;
@@ -26,6 +27,7 @@ export function HighlightsStep({
   onChangeComment,
   onSubmit,
   onPrev,
+  showPrev = true,
   isGenerating,
   errorMessage,
   onRetry,
@@ -109,17 +111,21 @@ export function HighlightsStep({
 
       {/* Action Buttons */}
       <div className="flex items-center justify-between gap-3 pt-2">
-        <Button
-          type="button"
-          variant="secondary"
-          size="md"
-          onClick={onPrev}
-          disabled={isGenerating}
-          leftIcon={<ArrowLeft className="w-4 h-4" />}
-          aria-label="Previous step"
-        >
-          Back
-        </Button>
+        {showPrev && onPrev ? (
+          <Button
+            type="button"
+            variant="secondary"
+            size="md"
+            onClick={onPrev}
+            disabled={isGenerating}
+            leftIcon={<ArrowLeft className="w-4 h-4" />}
+            aria-label="Previous step"
+          >
+            Back
+          </Button>
+        ) : (
+          <div />
+        )}
 
         <Button
           type="button"

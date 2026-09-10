@@ -52,11 +52,22 @@ export async function POST(request: NextRequest) {
     }
   }
 
+  // Sanitize and cap optional fields to prevent oversized payloads / prompt injection
+  const sanitizedData: FeedbackData = {
+    food: Number(body.food) as FeedbackData["food"],
+    service: Number(body.service) as FeedbackData["service"],
+    ambience: Number(body.ambience) as FeedbackData["ambience"],
+    value: Number(body.value) as FeedbackData["value"],
+    overall: Number(body.overall) as FeedbackData["overall"],
+    highlight: typeof body.highlight === "string" ? body.highlight.trim().slice(0, 100) : "",
+    comment: typeof body.comment === "string" ? body.comment.trim().slice(0, 500) : "",
+  };
+
   if (!isGeminiConfigured()) {
     console.error("[ReviewFlow API] Gemini request failed: GEMINI_API_KEY is not configured.");
     return NextResponse.json(
       {
-        error: "GEMINI_API_KEY is not configured in .env. Please configure GEMINI_API_KEY.",
+        error: "GEMINI_API_KEY is not configured. Please add GEMINI_API_KEY to your environment variables.",
         source: "error",
       },
       { status: 503 }
@@ -65,7 +76,7 @@ export async function POST(request: NextRequest) {
 
   try {
     console.log("[ReviewFlow API] Gemini review generation started");
-    const review = await generateWithGemini(body as FeedbackData);
+    const review = await generateWithGemini(sanitizedData);
     console.log("[ReviewFlow API] Gemini review generation succeeded");
 
     return NextResponse.json({

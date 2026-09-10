@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useCallback, useEffect, useRef } from "react";
-import { FeedbackData, FeedbackRatings, RatingValue } from "@/lib/types";
-import { DEFAULT_RATINGS } from "@/lib/constants";
+import { FeedbackData, FeedbackRatings, RatingValue, UiFeedbackRatings } from "@/lib/types";
+import { CATEGORIES, DEFAULT_UI_RATINGS } from "@/lib/constants";
 import { generateReview, fetchAppConfig, ApiError } from "@/lib/api";
 import { trackEvent } from "@/lib/analytics/events";
 import { RestaurantConfig } from "@/lib/restaurant/config";
@@ -17,7 +17,7 @@ export function useFeedbackFlow(options: UseFeedbackFlowOptions = {}) {
   const { restaurantConfig } = options;
   const restaurantSlug = restaurantConfig?.slug;
 
-  const [ratings, setRatings] = useState<FeedbackRatings>(DEFAULT_RATINGS);
+  const [ratings, setRatings] = useState<UiFeedbackRatings>(DEFAULT_UI_RATINGS);
   const [highlight, setHighlight] = useState<string>("");
   const [comment, setComment] = useState<string>("");
   const [currentStep, setCurrentStep] = useState<number>(1);
@@ -112,14 +112,34 @@ export function useFeedbackFlow(options: UseFeedbackFlowOptions = {}) {
     [restaurantSlug]
   );
 
+  const isAllRatingsAnswered = (Object.values(ratings) as (RatingValue | null)[]).every(
+    (r) => r !== null
+  );
+
   const submitFeedback = useCallback(async () => {
     if (view === "generating") return;
+
+    // Guard: ensure all 5 rating categories have been answered
+    const categories = restaurantConfig?.categories || CATEGORIES;
+    const unanswered = categories.find((cat) => ratings[cat.id] === null);
+    if (unanswered) {
+      setError(`Please rate ${unanswered.title} before drafting your review.`);
+      const stepIdx = categories.findIndex((cat) => cat.id === unanswered.id) + 1;
+      if (stepIdx > 0 && !isAllQuestionsMode) {
+        setCurrentStep(stepIdx);
+      }
+      return;
+    }
 
     setError(null);
     setView("generating");
 
     const payload: FeedbackData = {
-      ...ratings,
+      food: ratings.food as RatingValue,
+      service: ratings.service as RatingValue,
+      ambience: ratings.ambience as RatingValue,
+      value: ratings.value as RatingValue,
+      overall: ratings.overall as RatingValue,
       highlight,
       comment,
       slang_intensity: restaurantConfig?.toneConfig?.defaultIntensity || "medium",
@@ -162,7 +182,7 @@ export function useFeedbackFlow(options: UseFeedbackFlowOptions = {}) {
         setError("Failed to generate review. Please try again.");
       }
     }
-  }, [view, ratings, highlight, comment, restaurantConfig, restaurantSlug, googleReviewUrl]);
+  }, [view, ratings, highlight, comment, restaurantConfig, restaurantSlug, googleReviewUrl, isAllQuestionsMode]);
 
   const editAnswers = useCallback(() => {
     setError(null);
@@ -173,6 +193,7 @@ export function useFeedbackFlow(options: UseFeedbackFlowOptions = {}) {
   return {
     ratings,
     setRating,
+    isAllRatingsAnswered,
     highlight,
     toggleHighlight,
     comment,

@@ -6,6 +6,7 @@ import { HIGHLIGHT_OPTIONS } from "@/lib/constants";
 import { Chip } from "@/components/ui/Chip";
 import { Button } from "@/components/ui/Button";
 import { ArrowLeft, Sparkles } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface HighlightsStepProps {
   highlight: string;
@@ -19,6 +20,7 @@ interface HighlightsStepProps {
   errorMessage?: string;
   onRetry?: () => void;
   options?: { id: string; label: string; icon: string }[];
+  disabledSubmit?: boolean;
 }
 
 export function HighlightsStep({
@@ -33,6 +35,7 @@ export function HighlightsStep({
   errorMessage,
   onRetry,
   options = HIGHLIGHT_OPTIONS,
+  disabledSubmit = false,
 }: HighlightsStepProps) {
   return (
     <motion.div
@@ -134,9 +137,13 @@ export function HighlightsStep({
           variant="primary"
           size="md"
           onClick={onSubmit}
+          disabled={disabledSubmit}
           isLoading={isGenerating}
           rightIcon={<Sparkles className="w-4 h-4" />}
-          className="ml-auto min-w-[170px]"
+          className={cn(
+            "ml-auto min-w-[170px]",
+            disabledSubmit && "opacity-50 cursor-not-allowed"
+          )}
         >
           Draft my review
         </Button>

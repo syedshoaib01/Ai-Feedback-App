@@ -2,8 +2,8 @@
 
 import React from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { CategoryItem, RatingValue } from "@/types/feedback";
-import { RATING_DESCRIPTORS } from "@/lib/constants";
+import { CategoryItem, RatingValue, UiRatingValue } from "@/types/feedback";
+import { RATING_DESCRIPTORS, UNRATED_DESCRIPTOR } from "@/lib/constants";
 import { RatingSlider } from "./RatingSlider";
 import { Button } from "@/components/ui/Button";
 import { ArrowLeft, ArrowRight } from "lucide-react";
@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 
 interface StepQuestionProps {
   category: CategoryItem;
-  value: RatingValue;
+  value: UiRatingValue;
   onChange: (val: RatingValue) => void;
   onNext: () => void;
   onPrev: () => void;
@@ -30,7 +30,8 @@ export function StepQuestion({
   stepIndex,
   totalSteps,
 }: StepQuestionProps) {
-  const descriptor = RATING_DESCRIPTORS[value] || RATING_DESCRIPTORS[5];
+  const isRated = value !== null && value >= 1 && value <= 5;
+  const descriptor = isRated ? (RATING_DESCRIPTORS[value] || RATING_DESCRIPTORS[5]) : UNRATED_DESCRIPTOR;
 
   return (
     <motion.div
@@ -67,7 +68,7 @@ export function StepQuestion({
         <div className="flex items-baseline justify-between border-b border-border/50 pb-3">
           <div className="flex items-baseline gap-1.5">
             <span className="text-3xl sm:text-4xl font-black font-mono tracking-tight text-foreground">
-              {value}
+              {isRated ? value : "—"}
             </span>
             <span className="text-sm font-bold text-muted-foreground font-mono">
               / 5
@@ -75,22 +76,35 @@ export function StepQuestion({
           </div>
 
           <AnimatePresence mode="wait">
-            <motion.div
-              key={value}
-              initial={{ opacity: 0, scale: 0.9, y: -2 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 2 }}
-              transition={{ duration: 0.15 }}
-              className={cn(
-                "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs sm:text-sm font-bold border shadow-xs transition-colors",
-                descriptor.badgeBg,
-                descriptor.badgeText,
-                descriptor.badgeBorder
-              )}
-            >
-              <span>{descriptor.expression}</span>
-              <span>{descriptor.label}</span>
-            </motion.div>
+            {isRated ? (
+              <motion.div
+                key={value}
+                initial={{ opacity: 0, scale: 0.9, y: -2 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.9, y: 2 }}
+                transition={{ duration: 0.15 }}
+                className={cn(
+                  "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs sm:text-sm font-bold border shadow-xs transition-colors",
+                  descriptor.badgeBg,
+                  descriptor.badgeText,
+                  descriptor.badgeBorder
+                )}
+              >
+                <span>{descriptor.expression}</span>
+                <span>{descriptor.label}</span>
+              </motion.div>
+            ) : (
+              <motion.div
+                key="unrated-step-badge"
+                initial={{ opacity: 0, scale: 0.9, y: -2 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.9, y: 2 }}
+                transition={{ duration: 0.15 }}
+                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs sm:text-sm font-semibold border border-dashed border-border text-muted-foreground bg-muted/40"
+              >
+                <span>Choose a rating</span>
+              </motion.div>
+            )}
           </AnimatePresence>
         </div>
 
@@ -128,8 +142,12 @@ export function StepQuestion({
           variant="primary"
           size="md"
           onClick={onNext}
+          disabled={!isRated}
           rightIcon={<ArrowRight className="w-4 h-4" />}
-          className="ml-auto min-w-[130px] min-h-[48px]"
+          className={cn(
+            "ml-auto min-w-[130px] min-h-[48px] transition-all",
+            !isRated && "opacity-50 cursor-not-allowed"
+          )}
         >
           {stepIndex === totalSteps ? "Finish" : "Next"}
         </Button>

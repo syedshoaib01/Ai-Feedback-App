@@ -2,14 +2,14 @@
 
 import React, { useRef, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { RatingValue } from "@/types/feedback";
-import { RATING_DESCRIPTORS } from "@/lib/constants";
+import { RatingValue, UiRatingValue } from "@/types/feedback";
+import { RATING_DESCRIPTORS, UNRATED_DESCRIPTOR } from "@/lib/constants";
 import { cn, hapticFeedback } from "@/lib/utils";
 
 export interface RatingSliderProps {
   id?: string;
   name?: string;
-  value: RatingValue;
+  value: UiRatingValue;
   onChange: (value: RatingValue) => void;
   ariaLabel?: string;
   disabled?: boolean;
@@ -29,10 +29,11 @@ export function RatingSlider({
 }: RatingSliderProps) {
   const [isDragging, setIsDragging] = useState(false);
   const trackRef = useRef<HTMLDivElement>(null);
-  const dragStartValRef = useRef<RatingValue>(value);
+  const dragStartValRef = useRef<UiRatingValue>(value);
 
-  const descriptor = RATING_DESCRIPTORS[value] || RATING_DESCRIPTORS[5];
-  const percentage = ((value - 1) / 4) * 100;
+  const isRated = value !== null && value >= 1 && value <= 5;
+  const descriptor = isRated ? RATING_DESCRIPTORS[value] : UNRATED_DESCRIPTOR;
+  const percentage = isRated ? ((value - 1) / 4) * 100 : 0;
 
   // Pure state update without vibration during dragging
   const updateRating = useCallback(
@@ -60,8 +61,10 @@ export function RatingSlider({
   // Native range change (keyboard navigation & accessibility)
   const handleNativeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = parseInt(e.target.value, 10);
-    updateRating(val);
-    hapticFeedback(12);
+    if (!isNaN(val)) {
+      updateRating(val);
+      hapticFeedback(12);
+    }
   };
 
   // Direct tick button tap
@@ -69,6 +72,17 @@ export function RatingSlider({
     if (disabled || tick === value) return;
     updateRating(tick);
     hapticFeedback(12);
+  };
+
+  // Direct key tap for 1-5 keys
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (disabled) return;
+    if (["1", "2", "3", "4", "5"].includes(e.key)) {
+      e.preventDefault();
+      const num = parseInt(e.key, 10) as RatingValue;
+      updateRating(num);
+      hapticFeedback(12);
+    }
   };
 
   // Pointer drag & tap-to-position support
@@ -94,7 +108,7 @@ export function RatingSlider({
       // Ignore if not captured
     }
     // Only fire subtle haptic once upon release/commit if rating changed
-    if (value !== dragStartValRef.current) {
+    if (value !== dragStartValRef.current && value !== null) {
       hapticFeedback(12);
     }
   };
@@ -109,23 +123,36 @@ export function RatingSlider({
           </span>
 
           <AnimatePresence mode="wait">
-            <motion.div
-              key={value}
-              initial={{ opacity: 0, y: -4, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 4, scale: 0.95 }}
-              transition={{ duration: 0.15, ease: "easeOut" }}
-              className={cn(
-                "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs sm:text-sm font-bold border transition-colors",
-                descriptor.badgeBg,
-                descriptor.badgeText,
-                descriptor.badgeBorder
-              )}
-            >
-              <span>{descriptor.expression}</span>
-              <span>{descriptor.label}</span>
-              <span className="opacity-70">({value}/5)</span>
-            </motion.div>
+            {isRated ? (
+              <motion.div
+                key={value}
+                initial={{ opacity: 0, y: -4, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 4, scale: 0.95 }}
+                transition={{ duration: 0.15, ease: "easeOut" }}
+                className={cn(
+                  "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs sm:text-sm font-bold border transition-colors",
+                  descriptor.badgeBg,
+                  descriptor.badgeText,
+                  descriptor.badgeBorder
+                )}
+              >
+                <span>{descriptor.expression}</span>
+                <span>{descriptor.label}</span>
+                <span className="opacity-70">({value}/5)</span>
+              </motion.div>
+            ) : (
+              <motion.div
+                key="unrated-header-badge"
+                initial={{ opacity: 0, y: -4, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 4, scale: 0.95 }}
+                transition={{ duration: 0.15, ease: "easeOut" }}
+                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs sm:text-sm font-semibold border border-dashed border-border text-muted-foreground bg-muted/40"
+              >
+                <span>Choose a rating</span>
+              </motion.div>
+            )}
           </AnimatePresence>
         </div>
       )}
@@ -145,7 +172,10 @@ export function RatingSlider({
           <motion.div
             className="absolute top-0 bottom-0 left-0 bg-foreground rounded-full"
             initial={false}
-            animate={{ width: `${percentage}%` }}
+            animate={{
+              width: isRated ? `${percentage}%` : "0%",
+              opacity: isRated ? 1 : 0,
+            }}
             transition={{
               type: isDragging ? "tween" : "spring",
               duration: isDragging ? 0.05 : 0.25,
@@ -158,11 +188,17 @@ export function RatingSlider({
         {/* Custom Draggable Thumb with Visual/Tactile Scale Effect */}
         <motion.div
           className={cn(
-            "absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-card border-2 border-foreground shadow-md flex items-center justify-center pointer-events-none z-10",
+            "absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-card border-2 flex items-center justify-center pointer-events-none z-10 transition-colors",
+            isRated
+              ? "border-foreground shadow-md"
+              : "border-dashed border-muted-foreground/60 text-muted-foreground shadow-none",
             isDragging && "scale-115 shadow-xl ring-4 ring-foreground/20"
           )}
           initial={false}
-          animate={{ left: `${percentage}%` }}
+          animate={{
+            left: isRated ? `${percentage}%` : "0%",
+            opacity: isRated ? 1 : 0.75,
+          }}
           transition={{
             type: isDragging ? "tween" : "spring",
             duration: isDragging ? 0.05 : 0.25,
@@ -171,7 +207,7 @@ export function RatingSlider({
           }}
         >
           <span className="text-xs font-bold text-foreground font-mono">
-            {value}
+            {isRated ? value : "—"}
           </span>
         </motion.div>
 
@@ -183,14 +219,19 @@ export function RatingSlider({
           min="1"
           max="5"
           step="1"
-          value={value}
+          value={value ?? 1}
           onChange={handleNativeChange}
+          onKeyDown={handleKeyDown}
           disabled={disabled}
           aria-label={ariaLabel}
-          aria-valuenow={value}
+          aria-valuenow={value ?? undefined}
           aria-valuemin={1}
           aria-valuemax={5}
-          aria-valuetext={`${descriptor.label} (${value} out of 5)`}
+          aria-valuetext={
+            isRated
+              ? `${descriptor.label} (${value} out of 5)`
+              : "No rating selected. Choose a rating from 1 to 5."
+          }
           className="sr-only focus:not-sr-only focus:absolute focus:inset-0 focus:opacity-0 focus:z-20 cursor-pointer"
         />
       </div>
@@ -204,7 +245,7 @@ export function RatingSlider({
             onClick={() => handleTickClick(tick)}
             className={cn(
               "w-8 h-8 -mt-1 flex items-center justify-center rounded-full transition-all cursor-pointer hover:text-foreground hover:bg-card-subtle active:scale-90",
-              tick === value
+              isRated && tick === value
                 ? "text-foreground font-bold bg-card-subtle shadow-sm"
                 : "text-muted-foreground"
             )}

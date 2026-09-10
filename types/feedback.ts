@@ -1,5 +1,7 @@
 export type RatingValue = 1 | 2 | 3 | 4 | 5;
 
+export type UiRatingValue = RatingValue | null;
+
 export type SlangIntensity = "low" | "medium" | "high";
 
 export interface FeedbackRatings {
@@ -9,6 +11,10 @@ export interface FeedbackRatings {
   value: RatingValue;
   overall: RatingValue;
 }
+
+export type UiFeedbackRatings = {
+  [K in keyof FeedbackRatings]: UiRatingValue;
+};
 
 export interface FeedbackData extends FeedbackRatings {
   highlight?: string;

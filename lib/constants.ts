@@ -1,4 +1,12 @@
-import { CategoryItem, FeedbackRatings, HighlightItem, RatingValue } from "./types";
+import { CategoryItem, FeedbackRatings, HighlightItem, RatingValue, UiFeedbackRatings } from "./types";
+
+export const UNRATED_DESCRIPTOR = {
+  label: "Choose a rating",
+  expression: "—",
+  badgeBg: "bg-muted/40",
+  badgeText: "text-muted-foreground",
+  badgeBorder: "border-dashed border-border",
+};
 
 export const SCORE_LABELS: Record<RatingValue, string> = {
   1: "Very dissatisfied (1/5)",
@@ -121,6 +129,14 @@ export const SLANG_STYLE_GUIDES = [
   "Style: Internet-native casual voice. Spontaneous and authentic using 2-3 phrases like 'fire', 'lowkey', 'worth it', or 'immaculate' where fitting.",
   "Style: Relaxed conversational tone. Focus on effortless phrasing, varied rhythm, and casual sincerity.",
 ];
+
+export const DEFAULT_UI_RATINGS: UiFeedbackRatings = {
+  food: null,
+  service: null,
+  ambience: null,
+  value: null,
+  overall: null,
+};
 
 export const DEFAULT_RATINGS: FeedbackRatings = {
   food: 5,

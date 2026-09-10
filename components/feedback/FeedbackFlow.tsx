@@ -23,6 +23,7 @@ export function FeedbackFlow({ restaurantConfig }: FeedbackFlowProps = {}) {
   const {
     ratings,
     setRating,
+    isAllRatingsAnswered,
     highlight,
     toggleHighlight,
     comment,
@@ -187,6 +188,7 @@ export function FeedbackFlow({ restaurantConfig }: FeedbackFlowProps = {}) {
                     errorMessage={error || undefined}
                     onRetry={submitFeedback}
                     options={restaurantConfig?.highlights}
+                    disabledSubmit={!isAllRatingsAnswered}
                   />
                 </motion.div>
               )}

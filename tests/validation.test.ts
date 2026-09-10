@@ -25,6 +25,20 @@ describe("Feedback Payload Validation", () => {
     expect(result.error).toContain("Please rate all five categories");
   });
 
+  it("rejects payloads where any rating is null and does not assume rating 3", () => {
+    const nullPayload = {
+      food: null,
+      service: 5,
+      ambience: 5,
+      value: 5,
+      overall: 5,
+    };
+    const result = validateFeedbackPayload(nullPayload);
+    expect(result.isValid).toBe(false);
+    expect(result.error).toContain("Please rate all five categories");
+    expect(result.data).toBeUndefined();
+  });
+
   it("rejects ratings greater than 5", () => {
     const payload = {
       food: 6,
@@ -112,8 +126,8 @@ describe("Feedback Payload Validation", () => {
     };
     const result = validateFeedbackPayload(payload);
     expect(result.isValid).toBe(true);
-    expect(result.data?.highlight.length).toBe(100);
-    expect(result.data?.comment.length).toBe(500);
+    expect(result.data?.highlight?.length).toBe(100);
+    expect(result.data?.comment?.length).toBe(500);
   });
 
   it("accepts custom slang_intensity parameter", () => {

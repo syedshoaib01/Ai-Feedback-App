@@ -38,18 +38,13 @@ export function StepQuestion({
       className="space-y-6"
     >
       {/* Category Header */}
-      <div className="space-y-2">
-        <div className="flex items-center gap-2.5">
-          <span className="text-2xl sm:text-3xl" role="img" aria-hidden="true">
-            {category.icon}
-          </span>
-          <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight text-foreground">
-            {category.title}
-          </h2>
-        </div>
-        <p className="text-sm text-muted-foreground leading-relaxed">
-          {category.subtitle}
-        </p>
+      <div className="flex items-center gap-2.5">
+        <span className="text-2xl sm:text-3xl" role="img" aria-hidden="true">
+          {category.icon}
+        </span>
+        <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight text-foreground">
+          {category.title}
+        </h2>
       </div>
 
       {/* Interactive Rating Slider */}

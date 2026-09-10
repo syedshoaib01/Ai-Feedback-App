@@ -39,13 +39,10 @@ export function HighlightsStep({
       transition={{ duration: 0.25, ease: "easeInOut" }}
       className="space-y-6"
     >
-      <div className="space-y-1">
+      <div>
         <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight text-foreground">
           Highlights & Thoughts
         </h2>
-        <p className="text-sm text-muted-foreground">
-          Optional details that help make your review uniquely yours.
-        </p>
       </div>
 
       {/* Error Banner */}

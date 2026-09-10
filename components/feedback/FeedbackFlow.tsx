@@ -61,14 +61,9 @@ export function FeedbackFlow() {
               {/* Header with Mode Toggle & Progress */}
               <div className="space-y-4">
                 <div className="flex items-center justify-between gap-2">
-                  <div className="space-y-0.5">
-                    <p className="text-[11px] font-extrabold uppercase tracking-widest text-muted-foreground">
-                      Quick Feedback
-                    </p>
-                    <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
-                      How was your visit?
-                    </h1>
-                  </div>
+                  <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
+                    How was your visit?
+                  </h1>
 
                   {/* Guided vs All Questions Mode Toggle */}
                   <button
@@ -191,12 +186,6 @@ export function FeedbackFlow() {
           )}
         </AnimatePresence>
       </Card>
-
-      {/* Subtle Footer */}
-      <footer className="text-center py-3 text-xs text-muted-foreground/80 space-y-1">
-        <p>ReviewFlow · Powered by Google Gemini</p>
-        <p className="text-[11px] opacity-70">Takes ~20 seconds to draft & share</p>
-      </footer>
     </div>
   );
 }

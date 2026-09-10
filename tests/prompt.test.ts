@@ -17,12 +17,12 @@ describe("Prompt Builder & Sentiment Calibration", () => {
 
     const { systemInstruction, prompt } = buildReviewPrompt(highPositiveData);
 
-    expect(prompt).toContain("HIGH POSITIVE SENTIMENT");
+    expect(prompt).toContain("SENTIMENT: HIGHLY ENTHUSIASTIC (5/5)");
     expect(prompt).toContain("Food & Drinks: Very satisfied / Excellent (5/5)");
     expect(prompt).toContain("Best oat latte ever.");
     expect(prompt).toContain("Coffee");
     expect(systemInstruction).toContain("STRICT FACTUAL GROUNDING");
-    expect(systemInstruction).toContain("NEVER invent specific menu items");
+    expect(systemInstruction).toContain("NEVER invent dishes, beverages");
     expect(systemInstruction).toContain("NO EMOJIS");
   });
 
@@ -40,8 +40,8 @@ describe("Prompt Builder & Sentiment Calibration", () => {
 
     const { prompt } = buildReviewPrompt(mixedData);
 
-    expect(prompt).toContain("MIXED SENTIMENT");
-    expect(prompt).toContain("MUST mention both the positive and the negative sides honestly");
+    expect(prompt).toContain("SENTIMENT: MIXED / BALANCED");
+    expect(prompt).toContain("The customer experienced clear pros and cons");
     expect(prompt).toContain("Atmosphere");
     expect(prompt).toContain("Super pretty space but service took 30 mins.");
   });
@@ -59,12 +59,12 @@ describe("Prompt Builder & Sentiment Calibration", () => {
 
     const { prompt } = buildReviewPrompt(negativeData);
 
-    expect(prompt).toContain("CRITICAL/NEGATIVE SENTIMENT");
+    expect(prompt).toContain("SENTIMENT: CRITICAL / DISSATISFIED");
     expect(prompt).toContain("DO NOT sugarcoat");
     expect(prompt).toContain("Cold food and rushed staff.");
   });
 
-  it("configures LOW slang intensity properly", () => {
+  it("configures subtle/clean slang intensity properly", () => {
     const data: FeedbackData = {
       food: 4,
       service: 4,
@@ -75,11 +75,11 @@ describe("Prompt Builder & Sentiment Calibration", () => {
     };
 
     const { prompt } = buildReviewPrompt(data);
-    expect(prompt).toContain("SLANG INTENSITY: LOW");
-    expect(prompt).toContain("Avoid internet shorthand like \"ngl\", \"lowkey\"");
+    expect(prompt).toContain("SLANG LEVEL: SUBTLE / CLEAN CONVERSATIONAL");
+    expect(prompt).toContain("DO NOT use internet acronyms or slang");
   });
 
-  it("configures HIGH slang intensity with anti-caricature guardrails", () => {
+  it("configures internet-native slang intensity with anti-caricature guardrails", () => {
     const data: FeedbackData = {
       food: 5,
       service: 5,
@@ -90,8 +90,8 @@ describe("Prompt Builder & Sentiment Calibration", () => {
     };
 
     const { prompt } = buildReviewPrompt(data);
-    expect(prompt).toContain("SLANG INTENSITY: HIGH");
-    expect(prompt).toContain("CRITICAL RULE: NEVER stack multiple slang terms");
+    expect(prompt).toContain("SLANG LEVEL: INTERNET-NATIVE");
+    expect(prompt).toContain("Never stack multiple slang words in one sentence");
   });
 
   it("enforces word length and output formatting constraints", () => {
@@ -104,9 +104,24 @@ describe("Prompt Builder & Sentiment Calibration", () => {
     };
 
     const { systemInstruction, prompt } = buildReviewPrompt(data);
-    expect(systemInstruction).toContain("40 to 90 words");
+    expect(systemInstruction).toContain("35 to 80 words");
     expect(systemInstruction).toContain("2 to 5 sentences");
-    expect(systemInstruction).toContain("Output plain review text ONLY");
-    expect(prompt).toContain("Voice Calibration Examples");
+    expect(systemInstruction).toContain("Plain review text ONLY");
+    expect(prompt).toContain("SENTENCE RHYTHM EXAMPLES (CALIBRATION)");
+  });
+
+  it("mirrors customer voice when customer notes include casual phrasing", () => {
+    const data: FeedbackData = {
+      food: 5,
+      service: 4,
+      ambience: 5,
+      value: 4,
+      overall: 5,
+      comment: "iced matcha was lowkey crazy good ngl",
+    };
+
+    const { prompt } = buildReviewPrompt(data);
+    expect(prompt).toContain("SLANG LEVEL: MATCH CUSTOMER VOICE");
+    expect(prompt).toContain("The customer used casual internet phrasing in their note. Mirror that casualness naturally!");
   });
 });

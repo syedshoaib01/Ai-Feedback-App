@@ -19,6 +19,7 @@ export interface FeedbackData extends FeedbackRatings {
 export interface CategoryItem {
   id: keyof FeedbackRatings;
   title: string;
+  question?: string;
   subtitle: string;
   icon: string;
 }

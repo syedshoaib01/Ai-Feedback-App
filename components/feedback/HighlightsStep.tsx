@@ -18,6 +18,7 @@ interface HighlightsStepProps {
   isGenerating: boolean;
   errorMessage?: string;
   onRetry?: () => void;
+  options?: { id: string; label: string; icon: string }[];
 }
 
 export function HighlightsStep({
@@ -31,6 +32,7 @@ export function HighlightsStep({
   isGenerating,
   errorMessage,
   onRetry,
+  options = HIGHLIGHT_OPTIONS,
 }: HighlightsStepProps) {
   return (
     <motion.div
@@ -53,9 +55,9 @@ export function HighlightsStep({
           role="alert"
           className="p-4 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 text-rose-900 dark:text-rose-200 flex items-start justify-between gap-3 text-sm"
         >
-          <div>
-            <p className="font-bold">Generation Issue</p>
-            <p className="text-xs opacity-90 mt-0.5">{errorMessage}</p>
+          <div className="space-y-0.5">
+            <p className="font-bold">Couldn&apos;t generate your review</p>
+            <p className="text-xs opacity-90">{errorMessage}</p>
           </div>
           {onRetry && (
             <Button
@@ -65,7 +67,7 @@ export function HighlightsStep({
               onClick={onRetry}
               className="border-rose-300 dark:border-rose-800 text-rose-800 dark:text-rose-200 hover:bg-rose-100 dark:hover:bg-rose-900/50 shrink-0"
             >
-              Retry
+              Try again
             </Button>
           )}
         </div>
@@ -77,7 +79,7 @@ export function HighlightsStep({
           What stood out? <span className="normal-case opacity-60 font-normal">(optional)</span>
         </label>
         <div className="flex flex-wrap gap-2">
-          {HIGHLIGHT_OPTIONS.map((item) => (
+          {options.map((item) => (
             <Chip
               key={item.id}
               label={item.label}

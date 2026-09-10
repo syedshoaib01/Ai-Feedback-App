@@ -32,7 +32,7 @@ describe("Gemini Client Configuration & Security", () => {
 
   it("falls back to default model if GEMINI_MODEL is not set", () => {
     delete process.env.GEMINI_MODEL;
-    expect(getGeminiModel()).toBe("gemini-3.5-flash");
+    expect(getGeminiModel()).toBe("gemini-3.8-flash");
   });
 
   it("respects custom GEMINI_MODEL", () => {

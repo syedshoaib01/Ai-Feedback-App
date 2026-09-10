@@ -14,6 +14,7 @@ export interface RatingSliderProps {
   ariaLabel?: string;
   disabled?: boolean;
   className?: string;
+  hideHeader?: boolean;
 }
 
 export function RatingSlider({
@@ -24,6 +25,7 @@ export function RatingSlider({
   ariaLabel = "Rating slider",
   disabled = false,
   className,
+  hideHeader = false,
 }: RatingSliderProps) {
   const [isDragging, setIsDragging] = useState(false);
   const trackRef = useRef<HTMLDivElement>(null);
@@ -99,32 +101,34 @@ export function RatingSlider({
 
   return (
     <div className={cn("w-full space-y-3 select-none", className)}>
-      {/* Animated Rating Badge & Contextual Descriptor */}
-      <div className="flex items-center justify-between">
-        <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          Rating
-        </span>
+      {/* Animated Rating Badge & Contextual Descriptor (hidden if parent renders its own) */}
+      {!hideHeader && (
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Rating
+          </span>
 
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={value}
-            initial={{ opacity: 0, y: -4, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 4, scale: 0.95 }}
-            transition={{ duration: 0.15, ease: "easeOut" }}
-            className={cn(
-              "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs sm:text-sm font-bold border transition-colors",
-              descriptor.badgeBg,
-              descriptor.badgeText,
-              descriptor.badgeBorder
-            )}
-          >
-            <span>{descriptor.expression}</span>
-            <span>{descriptor.label}</span>
-            <span className="opacity-70">({value}/5)</span>
-          </motion.div>
-        </AnimatePresence>
-      </div>
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={value}
+              initial={{ opacity: 0, y: -4, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 4, scale: 0.95 }}
+              transition={{ duration: 0.15, ease: "easeOut" }}
+              className={cn(
+                "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs sm:text-sm font-bold border transition-colors",
+                descriptor.badgeBg,
+                descriptor.badgeText,
+                descriptor.badgeBorder
+              )}
+            >
+              <span>{descriptor.expression}</span>
+              <span>{descriptor.label}</span>
+              <span className="opacity-70">({value}/5)</span>
+            </motion.div>
+          </AnimatePresence>
+        </div>
+      )}
 
       {/* Interactive Track Container (Tap-to-position & Drag) */}
       <div

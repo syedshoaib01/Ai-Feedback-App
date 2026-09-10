@@ -21,6 +21,8 @@
     "@types/node": "^22.13.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "@upstash/ratelimit": "^2.0.8",
+    "@upstash/redis": "^1.38.4",
     "autoprefixer": "^10.4.20",
     "clsx": "^2.1.1",
     "lucide-react": "^1.16.0",
@@ -35,6 +37,8 @@
     "zod": "^4.6.1"
   },
   "devDependencies": {
+    "eslint": "^8.57.1",
+    "eslint-config-next": "^15.2.0",
     "tsx": "^4.23.13",
     "vitest": "^4.1.11"
   }

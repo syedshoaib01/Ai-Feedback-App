@@ -8,6 +8,9 @@ export function cn(...inputs: ClassValue[]) {
 export function hapticFeedback(pattern: number | number[] = 10) {
   if (typeof window !== "undefined" && "navigator" in window && "vibrate" in navigator) {
     try {
+      if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        return;
+      }
       navigator.vibrate(pattern);
     } catch {
       // Ignore errors on non-supporting devices

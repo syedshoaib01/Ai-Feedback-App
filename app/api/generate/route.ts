@@ -8,12 +8,18 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 export async function POST(request: NextRequest) {
-  // 1. Check client rate limit to protect public QR endpoint
+  // 1. Check client rate limit to protect public QR endpoint (Distributed Upstash Redis / Memory fallback)
   const clientIp = getClientIp(request.headers);
-  const rateLimit = checkRateLimit(clientIp, {
-    windowMs: 5 * 60 * 1000, // 5 minutes
-    maxRequests: 25, // 25 calls per 5 mins per IP
+  const rateLimit = await checkRateLimit(clientIp, {
+    windowMs: 10 * 60 * 1000, // 10 minutes
+    maxRequests: 15, // 15 calls per 10 mins per IP
   });
+
+  const rateLimitHeaders = {
+    "X-RateLimit-Limit": String(rateLimit.limit),
+    "X-RateLimit-Remaining": String(rateLimit.remaining),
+    "X-RateLimit-Reset": String(Math.ceil(rateLimit.resetTimeMs / 1000)),
+  };
 
   if (rateLimit.isRateLimited) {
     const retryAfterSec = Math.ceil(rateLimit.resetTimeMs / 1000);
@@ -27,6 +33,7 @@ export async function POST(request: NextRequest) {
         status: 429,
         headers: {
           "Retry-After": String(retryAfterSec),
+          ...rateLimitHeaders,
         },
       }
     );
@@ -86,7 +93,10 @@ export async function POST(request: NextRequest) {
         source: "Gemini",
         google_review_url: getGoogleReviewUrl(),
       },
-      { status: 200 }
+      {
+        status: 200,
+        headers: rateLimitHeaders,
+      }
     );
   } catch (err: unknown) {
     if (err instanceof GeminiGenerationError) {

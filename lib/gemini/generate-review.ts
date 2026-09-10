@@ -50,12 +50,12 @@ export async function generateReviewWithGemini(data: FeedbackData): Promise<stri
   const { systemInstruction, prompt } = buildReviewPrompt(data);
 
   let lastError: unknown = null;
-  const maxAttempts = 2;
+  const maxAttempts = 3;
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
       if (attempt > 1) {
-        await new Promise((resolve) => setTimeout(resolve, 800));
+        await new Promise((resolve) => setTimeout(resolve, attempt * 1000));
       }
 
       const response = await client.models.generateContent({

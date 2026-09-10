@@ -5,6 +5,7 @@ import { motion } from "motion/react";
 import { Button } from "@/components/ui/Button";
 import { Copy, Check, ArrowLeft, Star, AlertCircle } from "lucide-react";
 import { hapticFeedback } from "@/lib/utils";
+import { trackEvent } from "@/lib/analytics/events";
 
 interface ReviewResultProps {
   review: string;
@@ -37,8 +38,9 @@ export function ReviewResult({
 
     try {
       await navigator.clipboard.writeText(review);
-      hapticFeedback(20);
+      hapticFeedback(12);
       setCopied(true);
+      trackEvent("review_copied", { characterCount: review.length });
       copyTimeoutRef.current = setTimeout(() => setCopied(false), 2200);
     } catch {
       // Fallback for non-secure context or older devices
@@ -48,8 +50,9 @@ export function ReviewResult({
       el.select();
       document.execCommand("copy");
       document.body.removeChild(el);
-      hapticFeedback(20);
+      hapticFeedback(12);
       setCopied(true);
+      trackEvent("review_copied", { characterCount: review.length });
       copyTimeoutRef.current = setTimeout(() => setCopied(false), 2200);
     }
   };
@@ -77,7 +80,7 @@ export function ReviewResult({
           Here&apos;s your review draft
         </h2>
         <p className="text-sm text-muted-foreground leading-relaxed">
-          your feeling our structure
+          Tweak anything you like, then copy and paste directly into Google.
         </p>
       </div>
 
@@ -88,33 +91,31 @@ export function ReviewResult({
         </label>
         <textarea
           id="generated-review-textarea"
-          rows={6}
+          rows={5}
           value={review}
           onChange={(e) => onChangeReview(e.target.value)}
-          spellCheck
-          className="w-full rounded-2xl border-2 border-border bg-card-subtle p-4 sm:p-5 text-sm sm:text-base text-foreground leading-relaxed focus:bg-card focus:border-foreground focus:outline-none focus:ring-2 focus:ring-foreground/20 transition-all resize-y shadow-inner font-sans"
+          onBlur={() => trackEvent("review_edited", { characterCount: review.length })}
+          placeholder="Your review will appear here..."
+          className="w-full rounded-2xl border-2 border-border bg-card-subtle p-4 sm:p-5 text-sm sm:text-base text-foreground font-normal leading-relaxed placeholder:text-muted-foreground focus:bg-card focus:border-foreground focus:outline-none focus:ring-1 focus:ring-foreground transition-all resize-none shadow-xs"
         />
-        <div className="absolute bottom-3 right-3 text-[11px] font-mono text-muted-foreground bg-card/80 backdrop-blur-sm px-2 py-0.5 rounded-md border border-border/50">
-          Tap to edit
-        </div>
       </div>
 
-      {/* Secondary Actions: Edit Answers & Copy Review */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      {/* Actions: Re-edit vs Copy */}
+      <div className="flex flex-col sm:flex-row items-center gap-3">
         <Button
           type="button"
           variant="secondary"
           size="md"
           onClick={onEditAnswers}
           leftIcon={<ArrowLeft className="w-4 h-4" />}
-          className="w-full order-2 sm:order-1"
+          className="w-full sm:w-auto order-2 sm:order-1"
         >
           Edit answers
         </Button>
 
         <Button
           type="button"
-          variant={copied ? "primary" : "outline"}
+          variant="primary"
           size="md"
           onClick={handleCopy}
           leftIcon={
@@ -124,10 +125,11 @@ export function ReviewResult({
               <Copy className="w-4 h-4" />
             )
           }
-          className={`w-full order-1 sm:order-2 transition-all ${copied
+          className={`w-full order-1 sm:order-2 transition-all ${
+            copied
               ? "bg-emerald-700 text-white hover:bg-emerald-800 border-emerald-700"
               : ""
-            }`}
+          }`}
         >
           {copied ? "Copied to clipboard!" : "Copy review"}
         </Button>
@@ -140,7 +142,10 @@ export function ReviewResult({
             href={googleReviewUrl}
             target="_blank"
             rel="noopener noreferrer"
-            onClick={() => hapticFeedback(15)}
+            onClick={() => {
+              hapticFeedback(12);
+              trackEvent("google_cta_clicked");
+            }}
             className="w-full h-14 rounded-2xl flex items-center justify-center gap-2.5 bg-accent-google hover:bg-accent-google-hover text-white font-bold text-base shadow-lg shadow-accent-google/25 transition-all hover:shadow-xl hover:scale-[1.01] active:scale-[0.98] select-none"
           >
             <Star className="w-5 h-5 fill-white text-white" />

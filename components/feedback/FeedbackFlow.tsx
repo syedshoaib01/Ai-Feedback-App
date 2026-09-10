@@ -13,8 +13,13 @@ import { ReviewResult } from "../review/ReviewResult";
 import { RatingSlider } from "./RatingSlider";
 import { Button } from "@/components/ui/Button";
 import { Sparkles, LayoutList, CheckSquare2 } from "lucide-react";
+import { RestaurantConfig } from "@/lib/restaurant/config";
 
-export function FeedbackFlow() {
+export interface FeedbackFlowProps {
+  restaurantConfig?: RestaurantConfig;
+}
+
+export function FeedbackFlow({ restaurantConfig }: FeedbackFlowProps = {}) {
   const {
     ratings,
     setRating,
@@ -35,9 +40,10 @@ export function FeedbackFlow() {
     error,
     submitFeedback,
     editAnswers,
-  } = useFeedbackFlow();
+  } = useFeedbackFlow({ restaurantConfig });
 
-  const currentCategory = CATEGORIES[currentStep - 1];
+  const categories = restaurantConfig?.categories || CATEGORIES;
+  const currentCategory = categories[currentStep - 1];
 
   return (
     <div className="w-full max-w-xl mx-auto space-y-4">
@@ -132,6 +138,7 @@ export function FeedbackFlow() {
                         isGenerating={false}
                         errorMessage={error || undefined}
                         onRetry={submitFeedback}
+                        options={restaurantConfig?.highlights}
                       />
                     )}
                   </AnimatePresence>
@@ -144,7 +151,7 @@ export function FeedbackFlow() {
                   className="space-y-6"
                 >
                   <div className="space-y-4">
-                    {CATEGORIES.map((cat) => (
+                    {categories.map((cat) => (
                       <div
                         key={cat.id}
                         className="bg-card-subtle p-4 sm:p-5 rounded-2xl border border-border/80 space-y-2"
@@ -179,6 +186,7 @@ export function FeedbackFlow() {
                     isGenerating={false}
                     errorMessage={error || undefined}
                     onRetry={submitFeedback}
+                    options={restaurantConfig?.highlights}
                   />
                 </motion.div>
               )}

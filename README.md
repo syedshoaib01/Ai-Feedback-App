@@ -108,7 +108,7 @@ python -m unittest discover -s tests -p "test_*.py" -v
 1. Connect your GitHub repository (`Ai-Feedback-App`) to Render.
 2. Create a new **Web Service**:
    - **Environment**: `Node`
-   - **Build Command**: `npm install && npm run build`
+   - **Build Command**: `npm install --include=dev && npm run build`
    - **Start Command**: `npm start`
 3. Under **Environment Variables**, add:
    - `NODE_VERSION`: `20.19.5`

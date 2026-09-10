@@ -2,7 +2,7 @@
 
 import React, { useRef, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { RatingValue } from "@/lib/types";
+import { RatingValue } from "@/types/feedback";
 import { RATING_DESCRIPTORS } from "@/lib/constants";
 import { cn, hapticFeedback } from "@/lib/utils";
 
@@ -27,15 +27,16 @@ export function RatingSlider({
 }: RatingSliderProps) {
   const [isDragging, setIsDragging] = useState(false);
   const trackRef = useRef<HTMLDivElement>(null);
+  const dragStartValRef = useRef<RatingValue>(value);
 
   const descriptor = RATING_DESCRIPTORS[value] || RATING_DESCRIPTORS[5];
   const percentage = ((value - 1) / 4) * 100;
 
-  const handleRatingChange = useCallback(
+  // Pure state update without vibration during dragging
+  const updateRating = useCallback(
     (newVal: number) => {
       const clamped = Math.min(5, Math.max(1, Math.round(newVal))) as RatingValue;
       if (clamped !== value) {
-        hapticFeedback(12);
         onChange(clamped);
       }
     },
@@ -49,21 +50,30 @@ export function RatingSlider({
       const relativeX = clientX - rect.left;
       const ratio = Math.min(Math.max(relativeX / rect.width, 0), 1);
       const computed = 1 + ratio * 4;
-      handleRatingChange(computed);
+      updateRating(computed);
     },
-    [handleRatingChange]
+    [updateRating]
   );
 
-  // Native range change (keyboard & fallback)
+  // Native range change (keyboard navigation & accessibility)
   const handleNativeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = parseInt(e.target.value, 10);
-    handleRatingChange(val);
+    updateRating(val);
+    hapticFeedback(12);
   };
 
-  // Pointer drag support
+  // Direct tick button tap
+  const handleTickClick = (tick: RatingValue) => {
+    if (disabled || tick === value) return;
+    updateRating(tick);
+    hapticFeedback(12);
+  };
+
+  // Pointer drag & tap-to-position support
   const handlePointerDown = (e: React.PointerEvent) => {
     if (disabled) return;
     setIsDragging(true);
+    dragStartValRef.current = value;
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
     calculateValueFromPointer(e.clientX);
   };
@@ -80,6 +90,10 @@ export function RatingSlider({
       (e.target as HTMLElement).releasePointerCapture(e.pointerId);
     } catch {
       // Ignore if not captured
+    }
+    // Only fire subtle haptic once upon release/commit if rating changed
+    if (value !== dragStartValRef.current) {
+      hapticFeedback(12);
     }
   };
 
@@ -112,7 +126,7 @@ export function RatingSlider({
         </AnimatePresence>
       </div>
 
-      {/* Interactive Track Container */}
+      {/* Interactive Track Container (Tap-to-position & Drag) */}
       <div
         ref={trackRef}
         onPointerDown={handlePointerDown}
@@ -137,11 +151,11 @@ export function RatingSlider({
           />
         </div>
 
-        {/* Custom Draggable Thumb */}
+        {/* Custom Draggable Thumb with Visual/Tactile Scale Effect */}
         <motion.div
           className={cn(
             "absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-card border-2 border-foreground shadow-md flex items-center justify-center pointer-events-none z-10",
-            isDragging && "scale-110 shadow-xl ring-4 ring-foreground/15"
+            isDragging && "scale-115 shadow-xl ring-4 ring-foreground/20"
           )}
           initial={false}
           animate={{ left: `${percentage}%` }}
@@ -179,15 +193,15 @@ export function RatingSlider({
 
       {/* Discrete Tick Numbers with Direct Tap Targets */}
       <div className="flex justify-between px-1 text-xs font-semibold text-muted-foreground font-mono">
-        {[1, 2, 3, 4, 5].map((tick) => (
+        {([1, 2, 3, 4, 5] as RatingValue[]).map((tick) => (
           <button
             key={tick}
             type="button"
-            onClick={() => handleRatingChange(tick)}
+            onClick={() => handleTickClick(tick)}
             className={cn(
-              "w-8 h-8 -mt-1 flex items-center justify-center rounded-full transition-colors cursor-pointer hover:text-foreground hover:bg-card-subtle",
+              "w-8 h-8 -mt-1 flex items-center justify-center rounded-full transition-all cursor-pointer hover:text-foreground hover:bg-card-subtle active:scale-90",
               tick === value
-                ? "text-foreground font-bold"
+                ? "text-foreground font-bold bg-card-subtle shadow-sm"
                 : "text-muted-foreground"
             )}
             aria-label={`Select rating ${tick}`}

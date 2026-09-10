@@ -2,36 +2,36 @@
 
 > Turn genuine customer feedback into authentic, casual reviews powered by Google Gemini.
 
-ReviewFlow is a production-quality, mobile-first web application designed for cafes and restaurants. Customers can scan a QR code at their table or counter and complete a guided 20–30 second feedback questionnaire across 5 satisfaction categories, select highlights, and add notes.
+ReviewFlow is a production-quality, mobile-first web application designed for cafes, restaurants, and hospitality venues. Customers scan a QR code at their table or counter and complete a guided 20–30 second feedback questionnaire across 5 satisfaction categories, select standout highlights, and optionally add their own notes.
 
-Using **Google Gemini**, ReviewFlow drafts an authentic, natural first-person review matching real customer speech (Gen Z / conversational tone) without inventing facts or distorting sentiment. Customers remain the genuine author — they can edit the draft, copy it with one tap, and continue directly to the restaurant's Google review page.
+Using **Google Gemini** via the official `@google/genai` TypeScript SDK, ReviewFlow synthesizes these inputs into an authentic, natural first-person review matching modern conversational speech (Gen Z / casual tone) without inventing facts or distorting sentiment. Customers remain the authors — they can edit the draft, copy it with one tap, and continue directly to the business's Google review dialog.
 
 ---
 
 ## ✨ Key Features
 
-- **Guided & All-in-One Experience**: Smooth 6-step questionnaire with dynamic animated progress (`01 / 06`) or single-page view.
-- **Premium Rating Sliders**: Smooth thumb movement, touch dragging, tap-to-position, keyboard accessibility, and dynamic contextual reaction badges (*Loved it!*, *Really good*, *Pretty good*, *Could be better*, *Not good*).
-- **Zero Hallucination Policy**: Grounded strictly in customer feedback — never invents menu items, staff names, prices, or events.
+- **Mobile-First & Tactile UX**: Optimized for 320px to 430px+ mobile screens, safe-area insets (`100dvh`), thumb-friendly tap targets (>= 44px), zero horizontal overflow.
+- **Visual/Tactile Rating Sliders**: Smooth thumb movement, scale-on-drag visual feedback, tap-to-position, keyboard navigation, and dynamic reaction badges (*Loved it!*, *Really good*, *Pretty good*, *Could be better*, *Not good*).
+- **Calibrated Gen-Z Voice**: Natural, human conversational tone that avoids robotic corporate templates and cringe caricatures. Supports variable slang intensity (`LOW`, `MEDIUM`, `HIGH`; default `MEDIUM`).
+- **Zero Hallucination Policy**: Grounded strictly in customer feedback — never invents menu items, staff names, prices, or wait times not mentioned by the customer.
 - **Strict Sentiment Fidelity**: Positive stays positive, mixed stays mixed, and critical stays critical.
-- **Branded AI Generation Experience**: Engaging, lightweight loading state with live status captions.
-- **Editable Draft Card**: Customer can tweak wording with one tap.
-- **One-Tap Copy & Google CTA**: Tactile copy button with confirmation and prominent "Continue to Google Reviews →" link.
-- **Light & Dark Mode**: Thoughtfully designed themes (warm cafe paper/cream in light mode, deep obsidian/slate in dark mode) with smooth Sun/Moon toggle and system preference persistence.
-- **Mobile-First & PWA Ready**: Optimized for 320px to 430px+ screens, safe-area insets (`100dvh`), thumb-friendly tap targets (>= 44px), zero horizontal overflow.
-- **Server-Side Security**: Gemini API key remains strictly on the server and is never exposed to client browsers.
+- **Editable Draft Card**: Customer can tweak wording with one tap in a responsive textarea.
+- **One-Tap Copy & Google CTA**: One-tap copy with visual confirmation and direct link to the venue's Google Reviews page.
+- **Light & Dark Mode**: Thoughtfully designed themes (warm cafe paper/cream in light mode, deep obsidian slate in dark mode) with system preference persistence.
+- **Server-Side Security**: Gemini API key remains strictly on the server and is never exposed to client browsers. Includes sliding-window abuse rate limiting and payload size guards.
 
 ---
 
 ## 🛠️ Tech Stack
 
-- **Frontend & App Engine**: Next.js 15 (App Router, Server Components & Route Handlers)
-- **Language**: TypeScript (Strict Mode) & Python 3.12
-- **Styling**: Tailwind CSS & Modern CSS Design Tokens
+- **Framework**: Next.js 15 (App Router, Server Components & Route Handlers)
+- **Language**: TypeScript 5 (Strict Mode)
+- **AI Engine**: Google Gemini API via official `@google/genai` SDK (`gemini-3.5-flash`)
+- **Validation**: Zod schema validation
+- **Styling**: Tailwind CSS & CSS variable design tokens
 - **Animations**: Motion for React (`motion/react`)
-- **AI Integration**: Google Gemini API via official `@google/genai` (Node) & `google-genai` (Python)
 - **Icons**: Lucide React
-- **Alternative / Legacy Backend**: Python Flask (Application Factory, Blueprints, Unittests)
+- **Testing**: Vitest automated test suite
 
 ---
 
@@ -52,15 +52,16 @@ Set your values:
 GEMINI_API_KEY=your_gemini_api_key_here
 
 # (Optional) Gemini model (default: gemini-3.5-flash)
+# Supported models: gemini-3.5-flash, gemini-3.6-flash, gemini-3.8-flash
 GEMINI_MODEL=gemini-3.5-flash
 
-# Direct Google Review URL for your business (from Google Maps or Business Profile)
+# Direct Google Review URL for your business
 GOOGLE_REVIEW_URL=https://www.google.com/search?q=your+business+name#lrd=...
 ```
 
 > **Security Note:** The `.env` file is strictly ignored by `.gitignore`. The Gemini API key remains securely on the backend and is never exposed to the client.
 
-### 2. Install & Run Next.js (Modern Production App)
+### 2. Install & Run Next.js
 
 ```bash
 # Install dependencies
@@ -76,91 +77,63 @@ npm start
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-### 3. (Optional) Run Flask Backend
-
-The Python Flask backend remains fully intact and organized with the Application Factory pattern:
+### 3. Run Automated Tests
 
 ```bash
-python3 -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-
-# Run via entrypoint
-python run.py
-# or
-python app.py
-```
-
-Open [http://127.0.0.1:5000](http://127.0.0.1:5000) in your browser.
-
-### 4. Running Python Tests
-
-```bash
-python -m unittest discover -s tests -p "test_*.py" -v
+npm test
 ```
 
 ---
 
-## ☁️ Deployment on Vercel (Recommended)
+## ☁️ Deployment on Vercel (Optimized)
 
-1. Import your GitHub repository (`Ai-Feedback-App`) on [Vercel](https://vercel.com/new).
+ReviewFlow is optimized for zero-config deployment on [Vercel](https://vercel.com):
+
+1. Import your GitHub repository (`syedshoaib01/Ai-Feedback-App`) on Vercel.
 2. Vercel automatically detects the **Next.js** framework preset.
-3. Under **Environment Variables**, configure:
-   - `GEMINI_API_KEY`: Your Gemini API key from Google AI Studio
-   - `GEMINI_MODEL`: `gemini-3.5-flash` (or your chosen Gemini model)
+3. Under **Settings > Environment Variables**, add:
+   - `GEMINI_API_KEY`: Your Gemini API key from Google AI Studio (marked sensitive/encrypted)
+   - `GEMINI_MODEL`: `gemini-3.5-flash` (or your preferred model)
    - `GOOGLE_REVIEW_URL`: Direct Google Review link for your business
-4. Click **Deploy**. Vercel will build and deploy the app with optimized edge caching and serverless AI review generation.
-
-<details>
-<summary>Alternative: Deployment on Render</summary>
-
-1. Connect your GitHub repository (`Ai-Feedback-App`) to Render.
-2. Create a new **Web Service** with Node environment:
-   - **Build Command**: `npm run build`
-   - **Start Command**: `npm start`
-3. Under **Environment Variables**, set:
-   - `NODE_VERSION`: `20.19.5`
-   - `GEMINI_API_KEY`: Your Gemini API key
-   - `GEMINI_MODEL`: `gemini-3.5-flash`
-   - `GOOGLE_REVIEW_URL`: Your business's Google review URL
-   - `NODE_ENV`: `production`
-
-</details>
+4. Deploy! Vercel automatically deploys the App Router routes as serverless functions with global edge caching and automatic SSL.
 
 ---
 
-## 📁 Architecture Overview
+## 📁 Architecture
 
 ```
 reviewflow_mvp/
 ├── app/
 │   ├── api/
-│   │   ├── generate/route.ts   # Next.js Server-side Gemini generation route
-│   │   └── config/route.ts     # Next.js public config (Google review URL, status)
+│   │   ├── generate/route.ts   # POST: Validate, rate-limit, generate review with Gemini
+│   │   ├── health/route.ts     # GET: Status, active model, configuration check
+│   │   └── config/route.ts     # GET: Safe public client config
 │   ├── globals.css             # Tailwind tokens, slider styles, dark mode
-│   ├── layout.tsx              # Root layout with fonts, metadata, theme script
+│   ├── layout.tsx              # Root layout with Plus Jakarta Sans, metadata, theme script
 │   ├── manifest.ts             # PWA metadata
-│   ├── page.tsx                # Main ReviewFlow app view
-│   ├── __init__.py             # Flask Application Factory (create_app)
-│   ├── config.py               # Flask environment configs
-│   ├── routes/                 # Flask blueprints (api.py, web.py)
-│   ├── services/               # Flask services (gemini_service.py)
-│   └── utils/                  # Flask validators
+│   └── page.tsx                # Main ReviewFlow questionnaire view
 ├── components/
 │   ├── ui/                     # Button, Card, Chip, ProgressBar, ThemeToggle
 │   ├── feedback/               # RatingSlider, StepQuestion, HighlightsStep, FeedbackFlow
 │   └── review/                 # ReviewGenerating, ReviewResult
-├── hooks/
-│   ├── useTheme.ts             # Theme state & localStorage persistence
-│   └── useFeedbackFlow.ts      # Multi-step state machine
 ├── lib/
-│   ├── api.ts                  # Typed client for /api/generate
-│   ├── constants.ts            # Categories, descriptors, style guides
-│   ├── gemini.ts               # Server-side Google GenAI client & prompt
+│   ├── gemini/
+│   │   ├── client.ts           # Official @google/genai client and secret redaction
+│   │   ├── prompt.ts           # Gen-Z prompt engineering with slang intensity & sentiment
+│   │   └── generate-review.ts  # Core generation orchestrator and error mapper
+│   ├── validation/
+│   │   └── feedback.ts         # Zod schema validation & input sanitizer
+│   ├── security/
+│   │   └── rate-limit.ts       # In-memory sliding-window rate limiter & payload guard
+│   ├── constants.ts            # Categories, descriptors, highlight tags
 │   ├── types.ts                # TypeScript interfaces
-│   └── utils.ts                # Utility functions & tactile haptics
-├── run.py                      # Flask runner
-├── app.py                      # Flask shim entrypoint
-├── requirements.txt            # Python dependencies
-└── tests/                      # Python unit tests
+│   └── utils.ts                # cn merger and safe haptic utilities
+├── types/
+│   ├── feedback.ts             # Feedback ratings, data, and intensity types
+│   └── review.ts               # API response and configuration interfaces
+└── tests/
+    ├── validation.test.ts      # Payload verification, boundary checks, and conversions
+    ├── prompt.test.ts          # Sentiment preservation and slang intensity steering
+    ├── rate-limit.test.ts      # Request rate-limiting tests
+    └── gemini.test.ts          # Configuration and secret redaction tests
 ```

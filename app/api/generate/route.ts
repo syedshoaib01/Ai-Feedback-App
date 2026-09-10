@@ -1,15 +1,50 @@
 import { NextRequest, NextResponse } from "next/server";
-import { generateWithGemini, getGoogleReviewUrl, isGeminiConfigured } from "@/lib/gemini";
-import { FeedbackData } from "@/lib/types";
+import { validateFeedbackPayload } from "@/lib/validation/feedback";
+import { checkRateLimit, getClientIp } from "@/lib/security/rate-limit";
+import { isGeminiConfigured, getGoogleReviewUrl, redactSensitiveData } from "@/lib/gemini/client";
+import { generateReviewWithGemini, GeminiGenerationError } from "@/lib/gemini/generate-review";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 export async function POST(request: NextRequest) {
-  let body: Partial<FeedbackData>;
+  // 1. Check client rate limit to protect public QR endpoint
+  const clientIp = getClientIp(request.headers);
+  const rateLimit = checkRateLimit(clientIp, {
+    windowMs: 5 * 60 * 1000, // 5 minutes
+    maxRequests: 25, // 25 calls per 5 mins per IP
+  });
 
+  if (rateLimit.isRateLimited) {
+    const retryAfterSec = Math.ceil(rateLimit.resetTimeMs / 1000);
+    return NextResponse.json(
+      {
+        error: "Too many feedback submissions. Please try again in a few minutes.",
+        source: "rate_limit",
+        google_review_url: getGoogleReviewUrl(),
+      },
+      {
+        status: 429,
+        headers: {
+          "Retry-After": String(retryAfterSec),
+        },
+      }
+    );
+  }
+
+  // 2. Reject oversized payloads (prevent memory exhaustion / DoS)
+  const contentLength = request.headers.get("content-length");
+  if (contentLength && parseInt(contentLength, 10) > 10240) {
+    return NextResponse.json(
+      { error: "Request payload too large. Maximum size is 10 KB." },
+      { status: 413 }
+    );
+  }
+
+  // 3. Parse JSON safely
+  let rawBody: unknown;
   try {
-    body = await request.json();
+    rawBody = await request.json();
   } catch {
     return NextResponse.json(
       { error: "Invalid JSON request payload." },
@@ -17,85 +52,71 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const requiredFields: Array<keyof FeedbackData> = [
-    "food",
-    "service",
-    "ambience",
-    "value",
-    "overall",
-  ];
-
-  const missing = requiredFields.filter(
-    (field) => body[field] === undefined || body[field] === null || body[field] === ""
-  );
-
-  if (missing.length > 0) {
+  // 4. Validate and sanitize feedback payload
+  const validation = validateFeedbackPayload(rawBody);
+  if (!validation.isValid || !validation.data) {
     return NextResponse.json(
-      {
-        error:
-          "Please rate all five categories on the sliders (Food, Service, Ambience, Value, Overall).",
-      },
+      { error: validation.error || "Invalid feedback payload." },
       { status: 400 }
     );
   }
 
-  // Validate ratings are within 1..5
-  for (const field of requiredFields) {
-    const val = Number(body[field]);
-    if (!Number.isInteger(val) || val < 1 || val > 5) {
-      return NextResponse.json(
-        {
-          error: `Rating for ${String(field).charAt(0).toUpperCase() + String(field).slice(1)} must be an integer between 1 and 5.`,
-        },
-        { status: 400 }
-      );
-    }
-  }
-
-  // Sanitize and cap optional fields to prevent oversized payloads / prompt injection
-  const sanitizedData: FeedbackData = {
-    food: Number(body.food) as FeedbackData["food"],
-    service: Number(body.service) as FeedbackData["service"],
-    ambience: Number(body.ambience) as FeedbackData["ambience"],
-    value: Number(body.value) as FeedbackData["value"],
-    overall: Number(body.overall) as FeedbackData["overall"],
-    highlight: typeof body.highlight === "string" ? body.highlight.trim().slice(0, 100) : "",
-    comment: typeof body.comment === "string" ? body.comment.trim().slice(0, 500) : "",
-  };
-
+  // 5. Verify Gemini API key configuration
   if (!isGeminiConfigured()) {
-    console.error("[ReviewFlow API] Gemini request failed: GEMINI_API_KEY is not configured.");
+    console.warn("[ReviewFlow API] Request failed: GEMINI_API_KEY is not configured.");
     return NextResponse.json(
       {
-        error: "GEMINI_API_KEY is not configured. Please add GEMINI_API_KEY to your environment variables.",
+        error: "GEMINI_API_KEY is not configured in .env. Please set GEMINI_API_KEY.",
         source: "error",
+        google_review_url: getGoogleReviewUrl(),
       },
       { status: 503 }
     );
   }
 
+  // 6. Generate review draft via Gemini
   try {
-    console.log("[ReviewFlow API] Gemini review generation started");
-    const review = await generateWithGemini(sanitizedData);
-    console.log("[ReviewFlow API] Gemini review generation succeeded");
-
-    return NextResponse.json({
-      review,
-      source: "Gemini",
-      google_review_url: getGoogleReviewUrl(),
-    });
-  } catch (error) {
-    const errMessage = error instanceof Error ? error.message : "Unknown error";
-    console.error(`[ReviewFlow API] Gemini request failed: ${errMessage}`);
+    console.log(`[ReviewFlow API] Generating review for client ${clientIp}`);
+    const review = await generateReviewWithGemini(validation.data);
+    console.log(`[ReviewFlow API] Successfully generated review draft`);
 
     return NextResponse.json(
       {
-        error: "Gemini couldn't generate the review. Please try again.",
-        details: errMessage.slice(0, 180),
+        review,
+        source: "Gemini",
+        google_review_url: getGoogleReviewUrl(),
+      },
+      { status: 200 }
+    );
+  } catch (err: unknown) {
+    if (err instanceof GeminiGenerationError) {
+      console.error(
+        `[ReviewFlow API] Gemini generation error (${err.statusCode}):`,
+        err.originalMessage || err.message
+      );
+      return NextResponse.json(
+        {
+          error: err.message,
+          details: err.originalMessage,
+          source: "error",
+          google_review_url: getGoogleReviewUrl(),
+        },
+        { status: err.statusCode }
+      );
+    }
+
+    const rawMsg = err instanceof Error ? err.message : "Unexpected server error";
+    const safeMsg = redactSensitiveData(rawMsg);
+    console.error("[ReviewFlow API] Unexpected error in generate endpoint:", safeMsg);
+
+    return NextResponse.json(
+      {
+        error: "An unexpected error occurred while generating the review.",
+        details: safeMsg.slice(0, 160),
         source: "error",
         google_review_url: getGoogleReviewUrl(),
       },
-      { status: 502 }
+      { status: 500 }
     );
   }
 }

@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { motion } from "motion/react";
 import { Button } from "@/components/ui/Button";
-import { Sparkles, Copy, Check, ArrowLeft, Star, AlertCircle } from "lucide-react";
+import { Copy, Check, ArrowLeft, Star, AlertCircle } from "lucide-react";
 import { hapticFeedback } from "@/lib/utils";
 
 interface ReviewResultProps {
@@ -54,11 +54,6 @@ export function ReviewResult({
     >
       {/* Status Header */}
       <div className="space-y-2">
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-accent-gemini-bg text-accent-gemini border border-accent-gemini/20">
-          <Sparkles className="w-3.5 h-3.5" />
-          <span>Drafted with Gemini</span>
-        </div>
-
         <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
           Here&apos;s your review draft ✨
         </h2>
@@ -149,10 +144,6 @@ export function ReviewResult({
           </div>
         )}
       </div>
-
-      <p className="text-xs text-center text-muted-foreground pt-1">
-        Your review is yours. Edit anything you want before sharing to Google.
-      </p>
     </motion.div>
   );
 }

@@ -83,10 +83,6 @@ export function ReviewGenerating() {
         <div className="h-3.5 bg-muted rounded-full w-full animate-pulse delay-75" />
         <div className="h-3.5 bg-muted rounded-full w-3/4 animate-pulse delay-150" />
       </div>
-
-      <p className="text-xs text-muted-foreground">
-        Powered by Google Gemini · Zero wait times
-      </p>
     </motion.div>
   );
 }

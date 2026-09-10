@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: reviewflow
+    env: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_VERSION
+        value: 20.19.5
+      - key: GEMINI_MODEL
+        value: gemini-3.5-flash
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GOOGLE_REVIEW_URL
+        sync: false

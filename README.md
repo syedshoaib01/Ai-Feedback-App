@@ -108,9 +108,10 @@ python -m unittest discover -s tests -p "test_*.py" -v
 1. Connect your GitHub repository (`Ai-Feedback-App`) to Render.
 2. Create a new **Web Service**:
    - **Environment**: `Node`
-   - **Build Command**: `npm run build`
+   - **Build Command**: `npm install && npm run build`
    - **Start Command**: `npm start`
 3. Under **Environment Variables**, add:
+   - `NODE_VERSION`: `20.19.5`
    - `GEMINI_API_KEY`: Your Gemini API key
    - `GEMINI_MODEL`: `gemini-3.5-flash`
    - `GOOGLE_REVIEW_URL`: Your business's Google review URL

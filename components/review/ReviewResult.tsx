@@ -55,10 +55,10 @@ export function ReviewResult({
       {/* Status Header */}
       <div className="space-y-2">
         <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
-          Here&apos;s your review draft ✨
+          Here&apos;s your review draft
         </h2>
         <p className="text-sm text-muted-foreground leading-relaxed">
-          You are the author. Feel free to edit words, add details, or change anything before sharing.
+          your feeling our structure
         </p>
       </div>
 
@@ -105,11 +105,10 @@ export function ReviewResult({
               <Copy className="w-4 h-4" />
             )
           }
-          className={`w-full order-1 sm:order-2 transition-all ${
-            copied
+          className={`w-full order-1 sm:order-2 transition-all ${copied
               ? "bg-emerald-700 text-white hover:bg-emerald-800 border-emerald-700"
               : ""
-          }`}
+            }`}
         >
           {copied ? "Copied to clipboard!" : "Copy review"}
         </Button>

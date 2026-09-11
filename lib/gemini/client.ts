@@ -5,7 +5,7 @@ export function getGeminiApiKey(): string {
 }
 
 export function getGeminiModel(): string {
-  return (process.env.GEMINI_MODEL || "gemini-3.8-flash").trim();
+  return (process.env.GEMINI_MODEL || "gemini-3.5-flash").trim();
 }
 
 export function getGoogleReviewUrl(): string {
@@ -29,7 +29,13 @@ export function getGeminiClient(): GoogleGenAI {
     return cachedClient;
   }
 
-  cachedClient = new GoogleGenAI({ apiKey });
+  cachedClient = new GoogleGenAI({
+    apiKey,
+    httpOptions: {
+      timeout: 15000,
+      retryOptions: { attempts: 1 },
+    },
+  });
   cachedKey = apiKey;
   return cachedClient;
 }

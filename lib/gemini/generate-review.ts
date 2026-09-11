@@ -44,22 +44,31 @@ function cleanReviewText(rawText: string): string {
   return cleaned;
 }
 
+const FALLBACK_MODEL = "gemini-3.5-flash";
+
 export async function generateReviewWithGemini(data: FeedbackData): Promise<string> {
   const client = getGeminiClient();
-  const model = getGeminiModel();
+  const primaryModel = getGeminiModel();
   const { systemInstruction, prompt } = buildReviewPrompt(data);
 
   let lastError: unknown = null;
-  const maxAttempts = 3;
+  const maxAttempts = 2;
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const currentModel =
+      attempt === 1
+        ? primaryModel
+        : primaryModel === FALLBACK_MODEL
+        ? "gemini-3.7-flash"
+        : FALLBACK_MODEL;
+
     try {
       if (attempt > 1) {
-        await new Promise((resolve) => setTimeout(resolve, attempt * 1000));
+        await new Promise((resolve) => setTimeout(resolve, 500));
       }
 
       const response = await client.models.generateContent({
-        model,
+        model: currentModel,
         contents: prompt,
         config: {
           systemInstruction,

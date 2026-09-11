@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { validateFeedbackPayload } from "@/lib/validation/feedback";
 import { checkRateLimit, getClientIp, RateLimitConfigError } from "@/lib/security/rate-limit";
 import { isGeminiConfigured, getGoogleReviewUrl, redactSensitiveData } from "@/lib/gemini/client";
-import { generateReviewWithGemini, GeminiGenerationError } from "@/lib/gemini/generate-review";
+import { generateReviewDetailed, GeminiGenerationError } from "@/lib/gemini/generate-review";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -105,18 +105,26 @@ export async function POST(request: NextRequest) {
   // 6. Generate review draft via Gemini
   try {
     console.log(`[ReviewFlow API] Generating review for client ${clientIp}`);
-    const review = await generateReviewWithGemini(validation.data);
-    console.log(`[ReviewFlow API] Successfully generated review draft`);
+    const result = await generateReviewDetailed(validation.data);
+    console.log(
+      `[ReviewFlow API] Successfully generated review draft using ${result.model} (fallback: ${result.isFallback}, attempts: ${result.attempts})`
+    );
 
     return NextResponse.json(
       {
-        review,
+        review: result.review,
         source: "Gemini",
+        model: result.model,
+        is_fallback: result.isFallback,
         google_review_url: getGoogleReviewUrl(),
       },
       {
         status: 200,
-        headers: rateLimitHeaders,
+        headers: {
+          ...rateLimitHeaders,
+          "X-ReviewFlow-Model": result.model,
+          "X-ReviewFlow-Fallback": String(result.isFallback),
+        },
       }
     );
   } catch (err: unknown) {

@@ -2,6 +2,8 @@ export interface GenerateResponse {
   review: string;
   source: string;
   google_review_url: string;
+  model?: string;
+  is_fallback?: boolean;
 }
 
 export interface GenerateErrorResponse {

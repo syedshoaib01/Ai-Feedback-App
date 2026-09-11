@@ -81,5 +81,7 @@ export async function generateReview(data: FeedbackData): Promise<GenerateRespon
     review: result.review,
     source: result.source || "Gemini",
     google_review_url: result.google_review_url || "",
+    model: result.model,
+    is_fallback: result.is_fallback,
   };
 }

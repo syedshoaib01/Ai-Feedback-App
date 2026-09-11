@@ -46,7 +46,14 @@ function cleanReviewText(rawText: string): string {
 
 const FALLBACK_MODEL = "gemini-3.5-flash";
 
-export async function generateReviewWithGemini(data: FeedbackData): Promise<string> {
+export interface ReviewGenerationResult {
+  review: string;
+  model: string;
+  isFallback: boolean;
+  attempts: number;
+}
+
+export async function generateReviewDetailed(data: FeedbackData): Promise<ReviewGenerationResult> {
   const client = getGeminiClient();
   const primaryModel = getGeminiModel();
   const { systemInstruction, prompt } = buildReviewPrompt(data);
@@ -55,6 +62,7 @@ export async function generateReviewWithGemini(data: FeedbackData): Promise<stri
   const maxAttempts = 2;
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const isFallback = attempt > 1;
     const currentModel =
       attempt === 1
         ? primaryModel
@@ -64,6 +72,9 @@ export async function generateReviewWithGemini(data: FeedbackData): Promise<stri
 
     try {
       if (attempt > 1) {
+        console.warn(
+          `[ReviewFlow] Retrying review generation using fallback model: ${currentModel}`
+        );
         await new Promise((resolve) => setTimeout(resolve, 500));
       }
 
@@ -83,12 +94,19 @@ export async function generateReviewWithGemini(data: FeedbackData): Promise<stri
         throw new Error("Gemini returned an empty review draft.");
       }
 
-      return reviewText;
+      return {
+        review: reviewText,
+        model: currentModel,
+        isFallback,
+        attempts: attempt,
+      };
     } catch (err: unknown) {
       lastError = err;
       const rawMsg = err instanceof Error ? err.message : String(err);
       const safeMsg = redactSensitiveData(rawMsg);
-      console.warn(`[ReviewFlow] Gemini attempt ${attempt} failed: ${safeMsg}`);
+      console.warn(
+        `[ReviewFlow] Gemini attempt ${attempt} using ${currentModel} failed: ${safeMsg}`
+      );
 
       // If rate limited or quota exceeded, detect early
       if (
@@ -113,4 +131,9 @@ export async function generateReviewWithGemini(data: FeedbackData): Promise<stri
     502,
     sanitizedMsg.slice(0, 180)
   );
+}
+
+export async function generateReviewWithGemini(data: FeedbackData): Promise<string> {
+  const result = await generateReviewDetailed(data);
+  return result.review;
 }
